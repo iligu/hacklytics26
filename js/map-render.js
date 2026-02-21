@@ -3,15 +3,26 @@
  * Depends: map, markers, geojsonLayer, animFrames, currentMode, currentDisease,
  *          getYearData, caseColor, fundingColor, coverageColor, computeR0, WORLD_GEOJSON, showCountry
  */
+function computeScaleStats(entries) {
+  var caseVals = entries.map(function (e) { return e.measles != null ? e.measles : 0; }).filter(function (v) { return v > 0; });
+  var covVals = entries.map(function (e) { return e.vaccine_coverage; }).filter(function (v) { return v != null && !isNaN(v); });
+  var gapVals = entries.map(function (e) { return e.funding_gap; }).filter(function (v) { return v != null && !isNaN(v) && v >= 0; });
+  return {
+    cases: caseVals.length ? { median: percentile(caseVals, 50), p75: percentile(caseVals, 75), max: Math.max.apply(null, caseVals) } : null,
+    coverage: covVals.length ? { median: percentile(covVals, 50), p75: percentile(covVals, 75) } : null,
+    gap: gapVals.length ? { median: percentile(gapVals, 50), p75: percentile(gapVals, 75) } : null
+  };
+}
+
 function renderYear(year) {
   const yr = String(year);
   const entries = getYearData(yr);
   const maxCases = Math.max(...entries.map(function (e) { return e.measles || 0; }), 1);
+  const stats = computeScaleStats(entries);
   const cfg = DISEASE_CONFIG[currentDisease] || DISEASE_CONFIG.measles;
   const diseaseLabel = cfg.label || 'Cases';
   const antigenLabel = cfg.antigenLabel || '';
 
-  // Refresh country dropdown (if present) with countries that have data this year
   if (window.updateCountrySelect) {
     window.updateCountrySelect(entries);
   }
@@ -21,37 +32,43 @@ function renderYear(year) {
   const legendLabels = document.getElementById('legend-labels');
   if (legendTitle && legendBar && legendLabels) {
     if (currentMode === 'coverage') {
-      legendTitle.textContent = 'Vaccine coverage (' + antigenLabel + ') — red = gap';
+      legendTitle.textContent = 'Vaccine coverage (' + antigenLabel + ')';
       legendBar.className = 'legend-bar legend-coverage';
-      legendLabels.innerHTML = '<span>0%</span><span>Low</span><span>95% target</span><span>High</span>';
+      legendBar.style.background = 'linear-gradient(to right, #b4322d, #d4a84b, #4a7c59)';
+      legendLabels.innerHTML = '<span>No data</span><span>Low</span><span>95% target</span><span>High</span>';
     } else if (currentMode === 'funding') {
-      legendTitle.textContent = 'Gov. health funding per capita';
-      legendBar.className = 'legend-bar';
-      legendBar.style.background = 'linear-gradient(to right, #8b1c1c, #9a7200, #3a6b3a)';
-      legendLabels.innerHTML = '<span>Low $</span><span></span><span>High $</span>';
+      legendTitle.textContent = 'Funding gap (burden vs funding)';
+      legendBar.className = 'legend-bar legend-gap';
+      legendBar.style.background = 'linear-gradient(to right, #3c8c50, #d1e6c3, #c03020)';
+      legendLabels.innerHTML = '<span>Overfunded</span><span>Neutral</span><span>Underfunded</span>';
     } else {
       legendTitle.textContent = diseaseLabel + ' case load';
-      legendBar.className = 'legend-bar';
-      legendBar.style.background = '';
-      legendLabels.innerHTML = '<span>0</span><span>Low</span><span>High</span><span>Severe</span>';
+      legendBar.className = 'legend-bar legend-cases';
+      legendBar.style.background = 'linear-gradient(to right, #fcfaf5, #e8c040, #b03028)';
+      legendLabels.innerHTML = '<span>No data</span><span>Low</span><span>High</span><span>Severe</span>';
     }
   }
 
   const totalCases = entries.reduce(function (s, e) { return s + (e.measles || 0); }, 0);
-  const affected = entries.filter(function (e) { return e.measles > 0; }).length;
+  const affected = entries.filter(function (e) { return e.measles != null && e.measles > 0; }).length;
   const sorted = entries.slice().sort(function (a, b) { return (b.measles || 0) - (a.measles || 0); });
   const worst = sorted[0];
-  document.getElementById('stat-total').textContent = totalCases.toLocaleString();
+  document.getElementById('stat-total').textContent = totalCases > 0 ? totalCases.toLocaleString() : 'No data available';
   document.getElementById('stat-countries').textContent = affected;
-  document.getElementById('stat-worst').textContent = worst ? worst.name.substring(0, 10) : '—';
+  document.getElementById('stat-worst').textContent = worst && worst.measles > 0 ? worst.name.substring(0, 10) : '—';
 
   for (const key of Object.keys(markers)) { map.removeLayer(markers[key]); }
   markers = {};
   for (const id of Object.values(animFrames)) cancelAnimationFrame(id);
   animFrames = {};
+  if (geojsonLayer) { map.removeLayer(geojsonLayer); geojsonLayer = null; }
 
   if (currentMode === 'funding' && WORLD_GEOJSON) {
-    renderGeoJson(entries);
+    renderGeoJson(entries, stats.gap);
+    return;
+  }
+  if (currentMode === 'coverage' && WORLD_GEOJSON) {
+    renderCoverageGeoJson(entries, stats.coverage);
     return;
   }
 
@@ -59,24 +76,24 @@ function renderYear(year) {
     const e = entries[i];
     if (!e.lat || !e.lng) continue;
     if (currentMode === 'funding' && !WORLD_GEOJSON) {
-      renderFundingCircle(e, maxCases);
+      renderFundingCircle(e, stats.gap);
     } else if (currentMode === 'coverage') {
-      renderCoverageCircle(e, 100);
+      renderCoverageCircle(e, stats.coverage);
     } else {
-      renderSpreadCircle(e, maxCases);
+      renderSpreadCircle(e, maxCases, stats.cases);
     }
   }
 
-  if (currentMode === 'both' && WORLD_GEOJSON) renderGeoJson(entries);
+  if (currentMode === 'both' && WORLD_GEOJSON) renderGeoJson(entries, stats.gap);
 }
 
-function renderSpreadCircle(e, maxCases) {
-  const cases = e.measles || 0;
-  if (cases === 0 && currentMode !== 'both') {
+function renderSpreadCircle(e, maxCases, caseStats) {
+  const cases = e.measles != null ? e.measles : 0;
+  if ((cases === 0 || cases == null) && currentMode !== 'both') {
     const dot = L.circleMarker([e.lat, e.lng], {
       radius: 3,
-      fillColor: '#c8bfa8',
-      fillOpacity: 0.5,
+      fillColor: NO_DATA_FILL,
+      fillOpacity: 0.6,
       color: '#b0a490',
       weight: 1,
     }).addTo(map);
@@ -86,62 +103,67 @@ function renderSpreadCircle(e, maxCases) {
   }
 
   const r0 = computeR0(e.pop_density || 1);
-  const color = caseColor(cases, maxCases);
-  const radius = 4 + (cases / maxCases) * 22;
-  const size = radius * 3;
-  const animate = cases > 100;
+  const color = caseColor(cases, maxCases, caseStats);
+  const radius = 5 + (cases / maxCases) * 16;
+  const size = Math.max(radius * 2, 14);
   const icon = L.divIcon({
-    className: '',
-    iconSize: [size * 2, size * 2],
-    iconAnchor: [size, size],
-    html: '<div style="position:relative;width:' + size * 2 + 'px;height:' + size * 2 + 'px;">' +
-      (animate ? '<div style="position:absolute;width:' + size * 2 + 'px;height:' + size * 2 + 'px;border-radius:50%;background:' + color + ';top:0;left:0;animation:pulse-ring ' + (2 + (1 - cases / maxCases) * 2) + 's cubic-bezier(0.2,0.8,0.2,1) infinite;transform-origin:center;"></div>' : '') +
-      '<div style="position:absolute;width:' + radius * 2 + 'px;height:' + radius * 2 + 'px;border-radius:50%;background:' + color + ';top:' + (size - radius) + 'px;left:' + (size - radius) + 'px;border:1.5px solid rgba(26,18,9,0.2);animation:pulse-dot 2s ease-in-out infinite;cursor:pointer;"></div></div>',
+    className: 'map-marker-spread',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    html: '<div class="spread-marker-wrap" style="position:relative;width:' + size + 'px;height:' + size + 'px;"><div class="spread-bubble" style="border-color:' + color + ';background:' + color + '"></div><div class="spread-bubble spread-bubble-2" style="border-color:' + color + ';background:' + color + '"></div><div class="spread-bubble spread-bubble-3" style="border-color:' + color + ';background:' + color + '"></div><div class="spread-dot" style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:' + color + ';border:1px solid rgba(40,35,25,0.15);cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.08);"></div></div>',
   });
   const marker = L.marker([e.lat, e.lng], { icon: icon, zIndexOffset: Math.floor(cases) }).addTo(map);
   marker.on('click', function () { showCountry(e.cc); });
+  var casesLabel = (cases != null && cases > 0) ? cases.toLocaleString() : 'No data available';
+  var fundLabel = (e.gghed_per_capita != null && e.gghed_per_capita > 0) ? '$' + e.gghed_per_capita.toFixed(0) + '/cap' : 'No data available';
+  var popLabel = (e.pop_density != null) ? e.pop_density.toFixed(1) + '/km²' : 'No data available';
   marker.bindTooltip(
-    '<div style="font-family:\'DM Mono\',monospace;font-size:11px;"><strong style="color:#8b3a2a">' + e.name + '</strong><br>Cases: <strong style="color:#c0392b">' + cases.toLocaleString() + '</strong><br>Gov. Health Funding: $' + (e.gghed_per_capita || 0).toFixed(0) + '/cap<br>Pop. Density: ' + (e.pop_density || 0).toFixed(1) + '/km²<br>Estimated R₀: ' + r0.toFixed(1) + '</div>',
-    { direction: 'top', offset: [0, -10] }
+    '<div style="font-family:\'DM Mono\',monospace;font-size:11px;"><strong style="color:#000">' + e.name + '</strong><br>Cases: <strong>' + casesLabel + '</strong><br>Gov. Health Funding: ' + fundLabel + '<br>Pop. Density: ' + popLabel + '<br>Adj. R₀ (indicative): ' + r0.toFixed(1) + '</div>',
+    { direction: 'top', offset: [0, -8] }
   );
   markers[e.cc] = marker;
 }
 
-function renderFundingCircle(e, maxCases) {
-  const color = fundingColor(e.gghed_per_capita);
-  const radius = 5 + (e.underfunded || 0) * 20;
+function renderFundingCircle(e, gapStats) {
+  const gap = e.funding_gap != null ? e.funding_gap : 0;
+  const color = gapColor(gap, gapStats);
+  const radius = 5 + Math.min(gap * 18, 12);
+  const fundLabel = (e.gghed_per_capita != null && e.gghed_per_capita > 0) ? '$' + e.gghed_per_capita.toFixed(0) + '/cap' : 'No data available';
+  const casesLabel = (e.measles != null && e.measles > 0) ? e.measles.toLocaleString() : 'No data available';
   const circle = L.circleMarker([e.lat, e.lng], {
     radius: radius,
     fillColor: color,
-    fillOpacity: 0.7,
-    color: 'rgba(255,255,255,0.2)',
+    fillOpacity: 0.78,
+    color: 'rgba(255,255,255,0.35)',
     weight: 1,
   }).addTo(map);
   circle.on('click', function () { showCountry(e.cc); });
-  circle.bindTooltip('<strong>' + e.name + '</strong><br>Funding: $' + (e.gghed_per_capita || 0).toFixed(0) + '/cap<br>Underfunded Score: ' + (e.underfunded || 0).toFixed(3), { direction: 'top' });
+  circle.bindTooltip('<strong style="color:#000">' + e.name + '</strong><br>Funding gap (burden vs funding): ' + (gap * 100).toFixed(0) + '%<br>Cases: ' + casesLabel + '<br>Funding: ' + fundLabel, { direction: 'top' });
   markers[e.cc] = circle;
 }
 
-function renderCoverageCircle(e, maxCoverage) {
+function renderCoverageCircle(e, coverageStats) {
   const cfg = DISEASE_CONFIG[currentDisease] || DISEASE_CONFIG.measles;
   const antigenLabel = cfg.antigenLabel || 'MCV2';
-  const coverage = e.vaccine_coverage || 0;
-  const color = coverageColor(coverage);
-  const radius = 5 + (coverage / 100) * 20;
+  const coverage = e.vaccine_coverage != null ? e.vaccine_coverage : 0;
+  const color = coverageColor(coverage, coverageStats);
+  const radius = 5 + (coverage / 100) * 14;
   const circle = L.circleMarker([e.lat, e.lng], {
     radius: radius,
     fillColor: color,
-    fillOpacity: 0.7,
-    color: 'rgba(255,255,255,0.2)',
+    fillOpacity: 0.78,
+    color: 'rgba(255,255,255,0.35)',
     weight: 1,
   }).addTo(map);
   circle.on('click', function () { showCountry(e.cc); });
-  circle.bindTooltip('<strong>' + e.name + '</strong><br>Vaccine Coverage (' + antigenLabel + '): ' + (coverage || 0).toFixed(1) + '%<br>Target: ' + (e.target_number || 0).toLocaleString() + '<br>Doses Given: ' + (e.doses || 0).toLocaleString(), { direction: 'top' });
+  var covLabel = (coverage != null && !isNaN(coverage)) ? coverage.toFixed(1) + '%' : 'No data available';
+  var targetLabel = (e.target_number != null && e.target_number > 0) ? e.target_number.toLocaleString() : 'No data available';
+  var dosesLabel = (e.doses != null && e.doses > 0) ? e.doses.toLocaleString() : 'No data available';
+  circle.bindTooltip('<strong style="color:#000">' + e.name + '</strong><br>Vaccine Coverage (' + antigenLabel + '): ' + covLabel + '<br>Target: ' + targetLabel + '<br>Doses Given: ' + dosesLabel, { direction: 'top' });
   markers[e.cc] = circle;
 }
 
-function renderGeoJson(entries) {
-  if (geojsonLayer) { map.removeLayer(geojsonLayer); geojsonLayer = null; }
+function renderGeoJson(entries, gapStats) {
   if (!WORLD_GEOJSON) return;
   const byCode = {};
   for (let i = 0; i < entries.length; i++) byCode[entries[i].cc] = entries[i];
@@ -149,12 +171,40 @@ function renderGeoJson(entries) {
     style: function (feature) {
       const cc = feature.properties.iso_a3 || feature.properties.ISO_A3 || feature.properties.ADM0_A3 || feature.properties.iso3;
       const e = byCode[cc];
-      const fill = e ? fundingColor(e.gghed_per_capita) : 'rgba(200,191,168,0.3)';
-      return { fillColor: fill, fillOpacity: 0.7, color: '#c8bfa8', weight: 0.8 };
+      const fill = e && e.funding_gap != null ? gapColor(e.funding_gap, gapStats) : NO_DATA_FILL;
+      return { fillColor: fill, fillOpacity: 0.72, color: '#b8b0a0', weight: 0.8 };
     },
     onEachFeature: function (feature, layer) {
       const cc = feature.properties.iso_a3 || feature.properties.ISO_A3 || feature.properties.ADM0_A3 || feature.properties.iso3;
       layer.on('click', function () { if (cc) showCountry(cc); });
+    },
+  }).addTo(map);
+}
+
+function renderCoverageGeoJson(entries, coverageStats) {
+  if (!WORLD_GEOJSON) return;
+  const cfg = DISEASE_CONFIG[currentDisease] || DISEASE_CONFIG.measles;
+  const antigenLabel = cfg.antigenLabel || 'MCV2';
+  const byCode = {};
+  for (let i = 0; i < entries.length; i++) byCode[entries[i].cc] = entries[i];
+  geojsonLayer = L.geoJSON(WORLD_GEOJSON, {
+    style: function (feature) {
+      const cc = feature.properties.iso_a3 || feature.properties.ISO_A3 || feature.properties.ADM0_A3 || feature.properties.iso3;
+      const e = byCode[cc];
+      const cov = e && e.vaccine_coverage != null ? e.vaccine_coverage : null;
+      const fill = cov != null ? coverageColor(cov, coverageStats) : NO_DATA_FILL;
+      return { fillColor: fill, fillOpacity: 0.72, color: '#b8b0a0', weight: 0.8 };
+    },
+    onEachFeature: function (feature, layer) {
+      const cc = feature.properties.iso_a3 || feature.properties.ISO_A3 || feature.properties.ADM0_A3 || feature.properties.iso3;
+      const e = byCode[cc];
+      const cov = e && e.vaccine_coverage != null ? e.vaccine_coverage : null;
+      const covLabel = cov != null ? cov.toFixed(1) + '%' : 'No data available';
+      const targetLabel = e && e.target_number != null && e.target_number > 0 ? e.target_number.toLocaleString() : 'No data available';
+      const dosesLabel = e && e.doses != null && e.doses > 0 ? e.doses.toLocaleString() : 'No data available';
+      const name = (e && e.name) || cc || 'Unknown';
+      layer.on('click', function () { if (cc) showCountry(cc); });
+      layer.bindTooltip('<strong style="color:#000">' + name + '</strong><br>Vaccine Coverage (' + antigenLabel + '): ' + covLabel + '<br>Target: ' + targetLabel + '<br>Doses Given: ' + dosesLabel, { direction: 'top' });
     },
   }).addTo(map);
 }

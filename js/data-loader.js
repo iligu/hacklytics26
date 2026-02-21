@@ -183,6 +183,7 @@ function parseAndMergeVaccineJSON(arr, config) {
     const code = row.CODE;
     if (!vaccineCountryNames[code] && row.NAME) vaccineCountryNames[code] = row.NAME;
     const year = String(row.YEAR);
+    if (year === '2024') continue;
     const coverage = row.COVERAGE != null && !isNaN(row.COVERAGE) ? Number(row.COVERAGE) : null;
     const targetNumber = row.TARGET_NUMBER != null && !isNaN(row.TARGET_NUMBER) ? Number(row.TARGET_NUMBER) : null;
     const doses = row.DOSES != null && !isNaN(row.DOSES) ? Number(row.DOSES) : null;
@@ -224,6 +225,7 @@ function parseAndMergeVaccineCSV(text, config) {
     const code = row[1];
     if (!vaccineCountryNames[code] && row[2]) vaccineCountryNames[code] = row[2];
     const year = String(row[3]);
+    if (year === '2024') continue;
     const targetNumber = row[8] ? parseInt(row[8], 10) : null;
     const doses = row[9] ? parseInt(row[9], 10) : null;
     let coverage = null;

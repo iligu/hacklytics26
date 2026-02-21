@@ -64,7 +64,7 @@
   });
 
   document.getElementById('btn-next').addEventListener('click', function () {
-    const y = Math.min(YEAR_MAX || 2024, parseInt(currentYear, 10) + 1);
+    const y = Math.min(YEAR_MAX || 2023, parseInt(currentYear, 10) + 1);
     currentYear = String(y);
     yearSlider.value = y;
     yearDisplay.textContent = currentYear;
@@ -84,7 +84,7 @@
       document.getElementById('btn-play').className = 'btn';
       playInterval = setInterval(function () {
         let y = parseInt(currentYear, 10) + 1;
-        if (y > (YEAR_MAX || 2024)) y = YEAR_MIN || 2000;
+        if (y > (YEAR_MAX || 2023)) y = YEAR_MIN || 2000;
         currentYear = String(y);
         yearSlider.value = y;
         yearDisplay.textContent = currentYear;

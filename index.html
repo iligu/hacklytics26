@@ -22,14 +22,19 @@
         <div class="control-label">Disease</div>
         <div class="disease-tabs">
           <div class="disease-tab active" data-disease="measles">Measles</div>
-          <div class="disease-tab" data-disease="coming" style="opacity:0.4;cursor:default">+ More Soon</div>
+          <div class="disease-tab" data-disease="ebola">Ebola</div>
+          <div class="disease-tab" data-disease="cholera">Cholera</div>
+          <div class="disease-tab" data-disease="covid19">COVID-19</div>
+          <div class="disease-tab" data-disease="mpox">MPox</div>
+          <div class="disease-tab" data-disease="chickenpox">Chickenpox</div>
+          <div class="disease-tab" data-disease="malaria">Malaria</div>
         </div>
       </div>
 
       <div class="control-section">
         <div class="control-label">Year</div>
         <div id="year-display">2010</div>
-        <input type="range" id="year-slider" min="2000" max="2024" value="2010" step="1">
+        <input type="range" id="year-slider" min="2000" max="2023" value="2010" step="1">
         <div class="play-controls">
           <button class="btn" id="btn-prev">&lt; Prev</button>
           <button class="btn primary" id="btn-play">&#9654; Play</button>
@@ -50,9 +55,19 @@
         <div class="control-label" id="legend-title">Measles case load</div>
         <div class="legend-bar" id="legend-bar"></div>
         <div class="legend-labels" id="legend-labels">
-          <span>0</span><span>Low</span><span>High</span><span>Severe</span>
+          <span>No data</span><span>Low</span><span>High</span><span>Severe</span>
         </div>
       </div>
+
+      <details class="data-cautions" open>
+        <summary class="data-cautions-title">Data cautions</summary>
+        <ul class="data-cautions-list">
+          <li>Reported cases may understate true incidence. Gaps indicate missing or unreported data.</li>
+          <li>Funding gap is indicative (burden vs funding). Not an official assessment.</li>
+          <li>Colour scales are pegged to median/percentiles for the selected year.</li>
+          <li>For methodology and sources, see <a href="DATA_AND_METHODOLOGY.md" target="_blank" rel="noopener">Data &amp; methodology</a>.</li>
+        </ul>
+      </details>
 
       <div class="control-section">
         <div class="control-label">Country</div>
@@ -73,6 +88,9 @@
           </div>
         </div>
       </div>
+      <div class="sidebar-footer">
+        <a href="DATA_AND_METHODOLOGY.md" target="_blank" rel="noopener">Data sources &amp; methodology</a> — R₀ and SIR verified.
+      </div>
     </div>
 
     <div id="map-container">
@@ -89,6 +107,40 @@
         <div class="top-stat">
           <div class="top-stat-label">Most Severe</div>
           <div class="top-stat-value warn" id="stat-worst">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart detail modal: click a graph to see full data (for UN / non-technical users) -->
+    <div id="chart-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="chart-modal-title">
+      <div id="chart-modal-backdrop" data-modal-close></div>
+      <div class="chart-modal-content">
+        <button class="chart-modal-close" type="button" data-modal-close aria-label="Close detailed view">×</button>
+        <div class="chart-modal-title" id="chart-modal-title">
+          Detailed trends — <span id="chart-modal-country"></span>
+        </div>
+        <div class="chart-modal-subtitle">
+          Year-by-year measles cases and vaccine coverage. Data is from the same source as the dashboard.
+        </div>
+        <div class="chart-modal-grid">
+          <div class="chart-modal-canvases">
+            <div class="mini-chart-label">Measles Cases Over Time</div>
+            <canvas id="modal-cases-canvas" height="160"></canvas>
+            <div class="mini-chart-label">Vaccine Coverage (MCV2) Over Time</div>
+            <canvas id="modal-vaccine-canvas" height="160"></canvas>
+          </div>
+          <div>
+            <table class="chart-modal-table" aria-label="Year-by-year data">
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th>Cases</th>
+                  <th>Coverage</th>
+                </tr>
+              </thead>
+              <tbody id="chart-modal-rows"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

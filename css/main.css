@@ -167,18 +167,66 @@
     background: var(--panel);
   }
   .legend-bar {
-    height: 6px; border-radius: 1px;
-    background: linear-gradient(to right, #d4c9b0, #c8a060, #b06030, #8b3a2a, #5a1a1a);
+    height: 6px; border-radius: 2px;
     margin: 8px 0;
   }
+  #legend-bar.legend-cases {
+    background: linear-gradient(to right, #fcfaf5, #e8c040, #b03028);
+  }
   #legend-bar.legend-coverage {
-    background: linear-gradient(to right, #c81e1e, #9a7200, #3a6b3a);
+    background: linear-gradient(to right, #b4322d, #d4a84b, #4a7c59);
+  }
+  #legend-bar.legend-gap {
+    background: linear-gradient(to right, #3c8c50, #d1e6c3, #c03020);
   }
   .legend-labels {
     display: flex; justify-content: space-between;
     font-size: 8px; color: var(--sepia);
     font-family: 'DM Mono', monospace;
   }
+  .data-cautions {
+    padding: 10px 14px;
+    margin: 0 12px 12px;
+    background: rgba(245,242,235,0.9);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-size: 9px;
+    color: var(--dim);
+    line-height: 1.5;
+  }
+  .data-cautions-title {
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--sepia);
+    margin-bottom: 0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .data-cautions-title::-webkit-details-marker { display: none; }
+  .data-cautions-title::before {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-left: 4px solid var(--sepia);
+    border-top: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    transition: transform 0.2s ease;
+  }
+  .data-cautions[open] .data-cautions-title::before {
+    transform: rotate(90deg);
+  }
+  .data-cautions-list {
+    margin: 6px 0 0;
+    padding-left: 14px;
+  }
+  .data-cautions-list li { margin-bottom: 4px; }
+  .data-cautions-list a { color: var(--accent); text-decoration: none; }
+  .data-cautions-list a:hover { text-decoration: underline; }
 
   /* Country panel */
   #country-panel {
@@ -196,6 +244,7 @@
   #country-meta { font-size: 9px; color: var(--sepia); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1.5px; font-family: 'DM Mono', monospace; }
 
   .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .country-panel-section { margin-top: 16px; }
   .stat-card {
     background: var(--parchment-light); border: 1px solid var(--border);
     padding: 10px; border-radius: 1px;
@@ -210,14 +259,22 @@
 
   .mini-chart-label {
     font-size: 8px; color: var(--sepia); text-transform: uppercase;
-    letter-spacing: 1.5px; margin-bottom: 6px; font-family: 'DM Mono', monospace;
+    letter-spacing: 1.5px;
+    margin: 16px 0 6px;
+    font-family: 'DM Mono', monospace;
   }
-  #mini-chart { width: 100%; height: 80px; position: relative; }
-  #mini-chart canvas { width: 100% !important; }
+  .mini-chart-label:first-of-type { margin-top: 0; }
+  #mini-chart-canvas,
+  #vaccine-chart-canvas {
+    width: 100% !important;
+    display: block;
+    margin-bottom: 0;
+    cursor: pointer;
+  }
 
   .sir-info {
     background: var(--parchment-light); border: 1px solid var(--border);
-    padding: 10px; margin-top: 12px; border-radius: 1px;
+    padding: 10px; margin-top: 16px; border-radius: 1px;
     font-size: 10px;
   }
   .sir-info .sir-title { color: var(--accent); font-weight: 500; margin-bottom: 6px; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; font-family: 'DM Mono', monospace; }
@@ -225,6 +282,7 @@
   .sir-row:last-child { border-bottom: none; }
   .sir-row .k { color: var(--sepia); font-family: 'DM Mono', monospace; }
   .sir-row .v { color: var(--ink); font-weight: 500; font-family: 'DM Mono', monospace; }
+  .sir-methodology { margin-top: 8px; font-size: 8px; color: var(--sepia); line-height: 1.4; font-family: 'DM Mono', monospace; }
 
   .no-selection {
     text-align: center; padding: 40px 20px;
@@ -232,6 +290,15 @@
     line-height: 1.8; font-family: 'DM Mono', monospace;
   }
   .no-selection .icon { font-size: 32px; margin-bottom: 12px; }
+  .sidebar-footer {
+    padding: 10px 20px;
+    border-top: 1px solid var(--border);
+    font-size: 9px;
+    color: var(--sepia);
+    background: var(--panel);
+  }
+  .sidebar-footer a { color: var(--accent); text-decoration: none; }
+  .sidebar-footer a:hover { text-decoration: underline; }
 
   /* TOP BAR INFO */
   #top-stats {
@@ -264,25 +331,41 @@
   .leaflet-popup-tip { background: var(--parchment-light) !important; }
   .leaflet-popup-close-button { color: var(--sepia) !important; }
 
-  /* Pulse ring animation */
-  @keyframes pulse-ring {
-    0% { transform: scale(0.5); opacity: 0.8; }
-    100% { transform: scale(3); opacity: 0; }
-  }
-  @keyframes pulse-dot {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.15); }
-    100% { transform: scale(1); }
-  }
-
-  .pulse-marker {
-    border-radius: 50%; cursor: pointer;
-    animation: pulse-dot 2s ease-in-out infinite;
+  /* Map markers: overlapping expanding bubbles + solid center (reference style) */
+  .map-marker-spread .spread-marker-wrap {
     position: relative;
   }
-  .pulse-ring {
-    border-radius: 50%; position: absolute;
-    animation: pulse-ring 2.5s cubic-bezier(0.2,0.8,0.2,1) infinite;
+  .map-marker-spread .spread-bubble {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 1.5px solid;
+    transform-origin: center;
+    animation: spreadBubbleExpand 2.2s ease-out infinite;
+    pointer-events: none;
+    box-sizing: border-box;
+  }
+  .map-marker-spread .spread-bubble-2 { animation-delay: 0.73s; }
+  .map-marker-spread .spread-bubble-3 { animation-delay: 1.46s; }
+  .map-marker-spread .spread-dot {
+    position: relative;
+    z-index: 1;
+    transition: opacity 0.2s ease;
+    animation: spreadPulse 2s ease-in-out infinite;
+  }
+  .map-marker-spread:hover .spread-dot {
+    opacity: 0.92;
+  }
+  @keyframes spreadPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
+  @keyframes spreadBubbleExpand {
+    0% { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(2.8); opacity: 0; }
   }
 
   /* Animate in */
@@ -300,3 +383,84 @@
     line-height: 1.7; font-family: 'DM Mono', monospace;
   }
   .geojson-hint strong { color: var(--accent); }
+
+  /* Chart detail modal — accurate data for everyone */
+  #chart-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+  }
+  #chart-modal.open {
+    display: flex;
+  }
+  #chart-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+  }
+  .chart-modal-content {
+    position: relative;
+    background: var(--parchment-light);
+    border: 1px solid var(--border);
+    box-shadow: 0 12px 32px rgba(26,18,9,0.4);
+    padding: 20px 24px;
+    max-width: 720px;
+    width: min(90vw, 720px);
+    max-height: 90vh;
+    overflow-y: auto;
+    border-radius: 2px;
+  }
+  .chart-modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+  .chart-modal-subtitle {
+    font-size: 11px;
+    color: var(--sepia);
+    margin-bottom: 12px;
+  }
+  .chart-modal-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    border: none;
+    background: transparent;
+    font-size: 18px;
+    cursor: pointer;
+    color: var(--sepia);
+  }
+  .chart-modal-close:hover { color: var(--ink); }
+  .chart-modal-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.3fr);
+    gap: 16px;
+    margin-top: 8px;
+  }
+  @media (max-width: 560px) {
+    .chart-modal-grid { grid-template-columns: 1fr; }
+  }
+  .chart-modal-canvases canvas {
+    width: 100% !important;
+    display: block;
+    margin-bottom: 12px;
+  }
+  .chart-modal-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  .chart-modal-table th,
+  .chart-modal-table td {
+    border-bottom: 1px solid var(--border);
+    padding: 4px 6px;
+    text-align: right;
+  }
+  .chart-modal-table th:first-child,
+  .chart-modal-table td:first-child {
+    text-align: left;
+  }
