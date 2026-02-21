@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoInsight: Overlooked Crises | UN Humanitarian Health Dashboard</title>
+  <meta name="description" content="GIS dashboard visualising mismatches between humanitarian health needs and pooled fund coverage, with healthcare-specific anomaly detection.">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════════════════ -->
+<header id="app-header">
+  <div class="logo-area">
+    <div class="un-emblem" aria-hidden="true">UN</div>
+    <div>
+      <div class="logo-title">GEOINSIGHT</div>
+      <div class="logo-subtitle">
+        <span class="live-indicator">
+          <span class="live-dot"></span> FTS · CBPF · WHO · 2024
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="header-metrics">
+    <div class="h-metric">
+      <div class="val color-red" id="stat-requirements">$0.00B</div>
+      <div class="lbl">Global Requirements</div>
+    </div>
+    <div class="h-metric">
+      <div class="val color-orange" id="stat-funded">$0.00B</div>
+      <div class="lbl">Total Funded</div>
+    </div>
+    <div class="h-metric">
+      <div class="val color-yellow" id="stat-gap-pct">0%</div>
+      <div class="lbl">Coverage Gap</div>
+    </div>
+    <div class="h-metric">
+      <div class="val color-blue" id="stat-pin">0M</div>
+      <div class="lbl">People in Need</div>
+    </div>
+  </div>
+</header>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     APP BODY
+══════════════════════════════════════════════════════════════ -->
+<div id="app-body">
+
+  <!-- ── LEFT PANEL ──────────────────────────────────────────── -->
+  <aside id="left-panel" class="panel" aria-label="Filters and crisis ranking">
+
+    <!-- Filters -->
+    <div class="section">
+      <div class="section-title">Map Controls</div>
+
+      <div class="control-group">
+        <div class="control-label">Map Layer</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button class="map-tab active" data-mode="gap"       style="border-radius:6px;border:1px solid var(--border2);text-align:left;padding:6px 10px">Funding Gap %</button>
+          <button class="map-tab"        data-mode="health"    style="border-radius:6px;border:1px solid var(--border2);text-align:left;padding:6px 10px">Health Cluster Funded %</button>
+          <button class="map-tab"        data-mode="workers"   style="border-radius:6px;border:1px solid var(--border2);text-align:left;padding:6px 10px">Health Workers / 10k</button>
+          <button class="map-tab"        data-mode="coldchain" style="border-radius:6px;border:1px solid var(--border2);text-align:left;padding:6px 10px">Cold Chain Coverage</button>
+          <button class="map-tab"        data-mode="cbpf"      style="border-radius:6px;border:1px solid var(--border2);text-align:left;padding:6px 10px">CBPF Pool Coverage</button>
+        </div>
+      </div>
+
+      <div class="control-group" style="margin-top:12px">
+        <div class="control-label">Base Map</div>
+        <div style="display:flex;gap:4px">
+          <button class="map-tab active" data-basemap="dark"      style="flex:1;border-radius:6px;border:1px solid var(--border2);padding:5px 4px;font-size:9px">Dark</button>
+          <button class="map-tab"        data-basemap="satellite" style="flex:1;border-radius:6px;border:1px solid var(--border2);padding:5px 4px;font-size:9px">Satellite</button>
+          <button class="map-tab"        data-basemap="topo"      style="flex:1;border-radius:6px;border:1px solid var(--border2);padding:5px 4px;font-size:9px">Terrain</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">Crisis Type</div>
+        <select id="filter-crisis-type">
+          <option value="all">All Types</option>
+          <option value="conflict">Conflict</option>
+          <option value="displacement">Displacement</option>
+          <option value="food">Food Insecurity</option>
+          <option value="climate">Climate / Disaster</option>
+          <option value="health">Health Emergency</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">Min. People in Need</div>
+        <input type="range" id="filter-pin" min="0" max="20" value="0" step="0.5">
+        <div class="range-row">
+          <span>0M</span>
+          <span id="pin-val" style="color:var(--blue)">All</span>
+          <span>20M+</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="section">
+      <div class="section-title">Alert Classification</div>
+      <div class="legend-list">
+        <div class="legend-item active">
+          <div class="legend-swatch" style="background:var(--red)"></div>
+          <div class="legend-info">
+            <div class="name color-red">Critical Gap</div>
+            <div class="desc">&lt;30% funded · High severity</div>
+          </div>
+        </div>
+        <div class="legend-item active">
+          <div class="legend-swatch" style="background:var(--orange)"></div>
+          <div class="legend-info">
+            <div class="name color-orange">High Gap</div>
+            <div class="desc">30–50% funded</div>
+          </div>
+        </div>
+        <div class="legend-item active">
+          <div class="legend-swatch" style="background:var(--yellow)"></div>
+          <div class="legend-info">
+            <div class="name color-yellow">Moderate Gap</div>
+            <div class="desc">50–70% funded</div>
+          </div>
+        </div>
+        <div class="legend-item active">
+          <div class="legend-swatch" style="background:var(--green)"></div>
+          <div class="legend-info">
+            <div class="name color-green">Adequately Funded</div>
+            <div class="desc">&gt;70% funded</div>
+          </div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-swatch" style="background:var(--purple);border-color:var(--purple)"></div>
+          <div class="legend-info">
+            <div class="name color-purple">⚠ Health Anomaly</div>
+            <div class="desc">Purple border on map polygon</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Crisis Ranking -->
+    <div class="section" style="flex:1;overflow-y:auto">
+      <div class="section-title orange">Most Overlooked Crises</div>
+      <div class="crisis-list" id="crisis-ranking"></div>
+    </div>
+
+    <!-- Data sources footer -->
+    <div class="section" style="padding:10px 14px">
+      <div class="section-title">Data Sources</div>
+      <div style="font-size:9px;color:var(--text-muted);font-family:var(--font-mono);line-height:1.7">
+        UN FTS 2024<br>
+        CBPF Data Hub · OCHA<br>
+        WHO Health Cluster Reports 2024<br>
+        HRP / HNO · HDX Platform<br>
+        INFORM Risk Index 2024
+      </div>
+    </div>
+
+  </aside>
+
+
+  <!-- ── MAP ─────────────────────────────────────────────────── -->
+  <main id="map-container" aria-label="Interactive crisis map">
+    <div id="map"></div>
+
+    <!-- Map layer label -->
+    <div class="map-toolbar" aria-hidden="true">
+      <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-muted);padding:5px 6px;letter-spacing:0.5px" id="legend-label">HRP Funding Coverage</span>
+    </div>
+
+    <!-- Corner stats -->
+    <div class="map-corner-stats" aria-hidden="true">
+      <div class="map-stat-chip">
+        <div class="v color-red">12</div>
+        <div class="l">Critical Gaps</div>
+      </div>
+      <div class="map-stat-chip">
+        <div class="v color-purple">8</div>
+        <div class="l">Health Anomalies</div>
+      </div>
+      <div class="map-stat-chip">
+        <div class="v color-blue">19</div>
+        <div class="l">CBPF Funds Active</div>
+      </div>
+    </div>
+
+    <!-- Legend box -->
+    <div class="map-legend-box" aria-hidden="true">
+      <div class="map-legend-label" id="legend-label-box">Funding Coverage</div>
+      <div class="gradient-bar"></div>
+      <div class="gradient-labels">
+        <span>Funded</span>
+        <span>Gap ▶</span>
+        <span>Critical</span>
+      </div>
+    </div>
+
+    <!-- Zoom controls -->
+    <div class="zoom-controls" aria-label="Map zoom controls">
+      <button class="zoom-btn" id="zoom-in"    title="Zoom in"    aria-label="Zoom in">+</button>
+      <button class="zoom-btn" id="zoom-out"   title="Zoom out"   aria-label="Zoom out">−</button>
+      <button class="zoom-btn" id="zoom-reset" title="Reset view" aria-label="Reset map view" style="font-size:11px">⊙</button>
+    </div>
+  </main>
+
+
+  <!-- ── RIGHT PANEL ─────────────────────────────────────────── -->
+  <aside id="right-panel" class="panel" aria-label="Country detail and analytics">
+
+    <!-- Country Detail Card (populated by JS) -->
+    <div id="detail-card"></div>
+
+    <!-- Charts -->
+    <div class="section">
+      <div class="section-title blue">Analytics</div>
+      <div class="chart-tabs">
+        <div class="chart-tab active" data-chart="gap">FUNDING</div>
+        <div class="chart-tab"       data-chart="health">HEALTH</div>
+        <div class="chart-tab"       data-chart="sector">SECTOR</div>
+        <div class="chart-tab"       data-chart="trend">TREND</div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="main-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Health Anomaly Detector -->
+    <div class="section">
+      <div class="section-title red">Health Anomaly Detector</div>
+      <div id="anomaly-list"></div>
+    </div>
+
+    <!-- CBPF Pooled Fund Status -->
+    <div class="section" style="padding-bottom:20px">
+      <div class="section-title purple">CBPF Pooled Fund Status</div>
+      <div id="cbpf-list"></div>
+    </div>
+
+  </aside>
+
+</div><!-- /#app-body -->
+
+
+<!-- ── SCRIPTS ─────────────────────────────────────────────── -->
+<!-- Leaflet JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<!-- App modules (order matters) -->
+<script src="data/crisisData.js"></script>
+<script src="js/map.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
