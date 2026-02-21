@@ -1,118 +1,120 @@
 /**
- * app.js — Application bootstrap & event wiring
- * Entry point: called after all scripts are loaded
+ * EpiWatch — Controls and bootstrap
+ * Depends: all other modules; runs after DOM and scripts are ready.
  */
-
 (function () {
-  'use strict';
+  const yearSlider = document.getElementById('year-slider');
+  const yearDisplay = document.getElementById('year-display');
+  const countrySelect = document.getElementById('country-select');
 
-  // Current filter state
-  const state = {
-    mapMode: 'gap',
-    crisisFilter: 'all',
-    baseMap: 'dark',
-    chartTab: 'gap',
-    pinMin: 0,
+  // Exposed so map-render can repopulate when year changes
+  window.updateCountrySelect = function (entries) {
+    if (!countrySelect) return;
+    const seen = {};
+    const items = [];
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      if (!e.cc || !e.name) continue;
+      if (seen[e.cc]) continue;
+      seen[e.cc] = true;
+      items.push({ code: e.cc, name: e.name });
+    }
+    items.sort(function (a, b) { return a.name.localeCompare(b.name); });
+    const selected = selectedCountry || '';
+    let html = '<option value=\"\">All countries (click map)</option>';
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      const sel = it.code === selected ? ' selected' : '';
+      html += '<option value=\"' + it.code + '\"' + sel + '>' + it.name + '</option>';
+    }
+    countrySelect.innerHTML = html;
   };
 
-  // ── DOM ready ─────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', () => {
-    // Init subsystems
-    GeoMap.init('map');
-    UI.init();
-    Charts.render('gap');
-
-    // Wire header stat counters
-    animateCounter('stat-requirements', 49.47, '$', 'B', 2);
-    animateCounter('stat-funded',       23.96, '$', 'B', 2);
-    animateCounter('stat-gap-pct',      51.6,  '',  '%', 1);
-    animateCounter('stat-pin',          305,   '',  'M', 0);
-
-    // Wire map mode tabs
-    document.querySelectorAll('.map-tab[data-mode]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.map-tab[data-mode]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        state.mapMode = btn.dataset.mode;
-        GeoMap.setMode(state.mapMode);
-        updateLegendLabel(state.mapMode);
-      });
+  if (countrySelect) {
+    countrySelect.addEventListener('change', function () {
+      const cc = countrySelect.value;
+      if (!cc) return;
+      selectedCountry = cc;
+      showCountry(cc);
+      if (markers[cc] && markers[cc].getLatLng) {
+        map.panTo(markers[cc].getLatLng());
+      }
     });
+  }
 
-    // Wire base map selector
-    document.querySelectorAll('.map-tab[data-basemap]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.map-tab[data-basemap]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        state.baseMap = btn.dataset.basemap;
-        GeoMap.setBaseMap(state.baseMap);
-      });
-    });
+  if (typeof YEAR_MIN !== 'undefined' && typeof YEAR_MAX !== 'undefined') {
+    yearSlider.min = YEAR_MIN;
+    yearSlider.max = YEAR_MAX;
+  }
 
-    // Wire left panel filters
-    const crisisFilterEl = document.getElementById('filter-crisis-type');
-    if (crisisFilterEl) {
-      crisisFilterEl.addEventListener('change', e => {
-        state.crisisFilter = e.target.value;
-        UI.buildCrisisRanking(
-          state.crisisFilter === 'all' ? () => true : d => d.crisis_type === state.crisisFilter
-        );
-      });
-    }
-
-    const pinSlider = document.getElementById('filter-pin');
-    if (pinSlider) {
-      pinSlider.addEventListener('input', e => {
-        state.pinMin = parseFloat(e.target.value);
-        document.getElementById('pin-val').textContent = state.pinMin > 0 ? state.pinMin + 'M+' : 'All';
-        UI.buildCrisisRanking(d => d.pin >= state.pinMin);
-      });
-    }
-
-    // Wire chart tabs
-    document.querySelectorAll('.chart-tab[data-chart]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('.chart-tab[data-chart]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        state.chartTab = btn.dataset.chart;
-        Charts.render(state.chartTab);
-      });
-    });
-
-    // Wire zoom controls
-    document.getElementById('zoom-in')?.addEventListener('click',    () => GeoMap.zoomIn());
-    document.getElementById('zoom-out')?.addEventListener('click',   () => GeoMap.zoomOut());
-    document.getElementById('zoom-reset')?.addEventListener('click', () => GeoMap.reset());
+  yearSlider.addEventListener('input', function () {
+    currentYear = yearSlider.value;
+    yearDisplay.textContent = currentYear;
+    renderYear(currentYear);
+    if (selectedCountry) showCountry(selectedCountry);
   });
 
-  // ── Animated number counter ───────────────────────────────────
-  function animateCounter(id, end, prefix = '', suffix = '', decimals = 0) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    let start = null;
-    const duration = 1400;
-    function step(ts) {
-      if (!start) start = ts;
-      const progress = Math.min((ts - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
-      el.textContent = prefix + (eased * end).toFixed(decimals) + suffix;
-      if (progress < 1) requestAnimationFrame(step);
+  document.getElementById('btn-prev').addEventListener('click', function () {
+    const y = Math.max(YEAR_MIN || 2000, parseInt(currentYear, 10) - 1);
+    currentYear = String(y);
+    yearSlider.value = y;
+    yearDisplay.textContent = currentYear;
+    renderYear(currentYear);
+    if (selectedCountry) showCountry(selectedCountry);
+  });
+
+  document.getElementById('btn-next').addEventListener('click', function () {
+    const y = Math.min(YEAR_MAX || 2024, parseInt(currentYear, 10) + 1);
+    currentYear = String(y);
+    yearSlider.value = y;
+    yearDisplay.textContent = currentYear;
+    renderYear(currentYear);
+    if (selectedCountry) showCountry(selectedCountry);
+  });
+
+  document.getElementById('btn-play').addEventListener('click', function () {
+    if (playing) {
+      playing = false;
+      clearInterval(playInterval);
+      document.getElementById('btn-play').textContent = '\u25B6 Play';
+      document.getElementById('btn-play').className = 'btn primary';
+    } else {
+      playing = true;
+      document.getElementById('btn-play').textContent = '\u23F8 Pause';
+      document.getElementById('btn-play').className = 'btn';
+      playInterval = setInterval(function () {
+        let y = parseInt(currentYear, 10) + 1;
+        if (y > (YEAR_MAX || 2024)) y = YEAR_MIN || 2000;
+        currentYear = String(y);
+        yearSlider.value = y;
+        yearDisplay.textContent = currentYear;
+        renderYear(currentYear);
+        if (selectedCountry) showCountry(selectedCountry);
+      }, 800);
     }
-    requestAnimationFrame(step);
-  }
+  });
 
-  // ── Legend label map ─────────────────────────────────────────
-  const LEGEND_LABELS = {
-    gap:       'HRP Funding Coverage',
-    health:    'Health Cluster Funded %',
-    workers:   'Health Workers / 10k (WHO min: 23)',
-    coldchain: 'Cold Chain Coverage %',
-    cbpf:      'CBPF Pooled Fund Coverage',
-  };
+  document.querySelectorAll('.disease-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      if (tab.dataset.disease === 'coming') return;
+      document.querySelectorAll('.disease-tab').forEach(function (t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      currentDisease = tab.dataset.disease;
+      renderYear(currentYear);
+    });
+  });
 
-  function updateLegendLabel(mode) {
-    const el = document.getElementById('legend-label');
-    if (el) el.textContent = LEGEND_LABELS[mode] || mode;
-  }
+  document.querySelectorAll('.mode-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.mode-btn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentMode = btn.dataset.mode;
+      if (geojsonLayer) { map.removeLayer(geojsonLayer); geojsonLayer = null; }
+      renderYear(currentYear);
+    });
+  });
 
+  loadVaccineData()
+    .then(function () { renderYear(currentYear); })
+    .catch(function () { renderYear(currentYear); });
 })();

@@ -1,184 +1,84 @@
-# 🌍 GeoInsight: Overlooked Crises
-### UN Humanitarian Health Funding Dashboard
+# EpiWatch — Global Disease Surveillance
 
-> A GIS dashboard visualising mismatches between humanitarian health needs and pooled fund coverage — with healthcare-specific anomaly detection, choropleth country mapping, and real-time filter controls.
+Geospatial dashboard for epidemic data, funding gaps, and vaccine coverage. Built for hackathon use; modular so you can add more diseases easily.
 
-Built for the **United Nations Geo-Insight Challenge** — submissions reviewed by OCHA & Databricks.
+## How to run the dashboard (Python server for JSON/CSV)
 
----
+The app loads vaccine data from JSON (or CSV) files via `fetch()`. Browsers block local file requests when you open the HTML with `file://`, so you need to serve the project over HTTP.
 
-## 📸 Features
-
-| Feature | Description |
-|---|---|
-| **Choropleth Map** | Country polygons coloured by 5 switchable data layers using your uploaded GeoJSON |
-| **Health Anomaly Detector** | Flags countries where health worker density falls below WHO minimum (23/10k) *and* health cluster funding < 25% |
-| **WHO Threshold Bar** | Compares actual health spend per person against WHO emergency minimum ($86/person/year) |
-| **Cold Chain Risk Layer** | Maps cold chain coverage gaps — critical for vaccines, insulin, blood products |
-| **CBPF Pool Tracker** | Shows Pooled Fund allocation vs. requirements per active country fund |
-| **5 Map Modes** | HRP Funding Gap / Health Cluster % / Health Workers / Cold Chain / CBPF Coverage |
-| **4 Chart Tabs** | Funding Gap · Health Workers · Sector Allocation · Multi-year Trend |
-| **Crisis Filters** | Filter by crisis type and minimum population in need |
-
----
-
-## 📁 Repository Structure
-
-```
-un-geoinsight/
-│
-├── index.html              # Main dashboard entry point
-│
-├── css/
-│   └── styles.css          # All styles (tokens, layout, components)
-│
-├── js/
-│   ├── app.js              # Bootstrap & event wiring
-│   ├── map.js              # Leaflet GIS choropleth module
-│   ├── charts.js           # Chart.js visualisation module
-│   └── ui.js               # Panel rendering (left, right, detail card)
-│
-└── data/
-    ├── crisisData.js        # Crisis dataset (20 countries, derived fields)
-    └── world.geo.json       # Simplified world GeoJSON (258 countries)
-```
-
----
-
-## 🚀 Quick Start
-
-**No build tools needed.** This is a pure HTML/CSS/JS application.
-
-### Option A — Direct browser open
+**1. Open a terminal** and go to the project folder:
 ```bash
-# Clone or download the repo
-open index.html
+cd /path/to/hacklytics26
 ```
-> ⚠️ The GeoJSON file loads via `fetch()` — you need a local server for CORS reasons.
+(Use your actual path, e.g. `cd ~/hacklytics26`.)
 
-### Option B — Local dev server (recommended)
+**2. Start the Python HTTP server:**
 ```bash
-# Python (built-in)
-python3 -m http.server 8080
-
-# Node.js
-npx serve .
-
-# VS Code
-# Install "Live Server" extension → right-click index.html → Open with Live Server
+python3 -m http.server 8000
 ```
-Then visit: `http://localhost:8080`
+You should see something like: `Serving HTTP on 0.0.0.0 port 8000 ...`
 
----
+**3. Open the dashboard in your browser:**
+- Go to: **http://localhost:8000/index.html**
+- Or: **http://localhost:8000/** (if the server shows `index.html` by default).
 
-## 🗺️ Data Sources
+**4. Leave the terminal running** while you use the dashboard. To stop the server, press `Ctrl+C` in the terminal.
 
-| Dataset | Source | Usage |
-|---|---|---|
-| UN FTS 2024 | [fts.unocha.org](https://fts.unocha.org) | Requirements, funded amounts, gap % |
-| CBPF Data Hub | [cbpf.data.unocha.org](https://cbpf.data.unocha.org) | Pooled fund allocations per country |
-| WHO Health Cluster Reports | [who.int](https://www.who.int) | Health worker density, facility functionality |
-| HRP / HNO 2024 | [data.humdata.org](https://data.humdata.org) | People in Need, cluster allocations |
-| INFORM Risk Index | [inform-index.org](https://inform-index.org) | Country severity scores |
-| Natural Earth / Custom GeoJSON | Uploaded | Country polygon boundaries |
+Vaccine JSON/CSV files in the project folder (e.g. `Measles vaccination coverage 2026-17-02 11-10 UTC.json`) will load correctly when the page is served this way.
 
----
+## Project structure
 
-## 🏥 Healthcare-Specific Indicators
+| Path | Purpose |
+|------|--------|
+| `index.html` | Entry point; minimal HTML and script order |
+| `css/main.css` | All styles (parchment theme, sidebar, map, panels) |
+| `js/config.js` | **Disease configuration** — single place to add diseases |
+| `js/app-state.js` | Global state (year, disease, mode) and Leaflet map init |
+| `js/epidemic-data.js` | `EPIDEMIC_DATA` (case counts, funding, etc. by country/year) |
+| `js/world-geo.js` | `WORLD_GEOJSON` (country shapes for choropleth) |
+| `js/data-loader.js` | Vaccine JSON/CSV loading and merge into `EPIDEMIC_DATA` |
+| `js/map-utils.js` | Colors, `getYearData()`, R0/spread helpers |
+| `js/map-render.js` | `renderYear()`, circle/GeoJSON rendering, legend |
+| `js/panel.js` | Country detail panel and sparklines |
+| `js/app.js` | Event handlers (year, play, disease tabs, map mode), bootstrap |
 
-Three unique healthcare lenses not found in standard FTS dashboards:
+## Adding a new disease
 
-### 1. Health Cluster vs WHO Coverage
-- Health cluster funded % extracted from HRP cluster breakdown
-- Compared against WHO emergency package minimum of **$86/person/year**
-- Visualised as a threshold bar on each country detail card
+1. **Add config** in `js/config.js`:
+   ```javascript
+   // In DISEASE_CONFIG, add e.g.:
+   polio: {
+     label: 'Polio',
+     R0: 6,
+     vaccineJsonUrl: 'polio-coverage.json',   // or vaccineCsvUrl
+     vaccineCsvUrl: 'polio-coverage.csv',
+     antigen: 'POL3',
+     coverageCategory: 'ADMIN',
+     antigenLabel: 'POL3',
+   },
+   ```
+   `R0_BASE` is derived from `DISEASE_CONFIG`, so no separate step.
 
-### 2. Patient-to-Clinician Ratio Anomaly
-- Health workers per 10,000 population vs **WHO minimum: 23/10k**
-- Countries below 5/10k *and* below 25% health cluster funding are **flagged with purple polygon borders** on the map
-- Ranked in the "Health Anomaly Detector" panel
+2. **Add a tab** in `index.html` (inside `.disease-tabs`):
+   ```html
+   <div class="disease-tab" data-disease="polio">Polio</div>
+   ```
+   Remove or replace the “+ More Soon” placeholder if you like.
 
-### 3. Medical Cold Chain & Supply Risk Layer
-- Cold chain coverage % mapped as a dedicated choropleth layer
-- Stockout risk classification (Critical / High / Moderate / Low) derived from funding trajectory
-- Displayed on country detail cards with colour-coded risk indicators
+3. **Vaccine data**: Use the same JSON shape (array of `{ GROUP, CODE, NAME, YEAR, ANTIGEN, COVERAGE_CATEGORY, TARGET_NUMBER, DOSES, COVERAGE }`) or CSV with columns `GROUP,CODE,NAME,YEAR,ANTIGEN,...,TARGET_NUMBER,DOSES,COVERAGE`. Put the file in the project root (or set `vaccineJsonUrl` / `vaccineCsvUrl` to the path). The loader filters by `antigen` and `coverageCategory` from config.
 
----
+4. **Epidemic/case data**: To show case counts for the new disease, extend `EPIDEMIC_DATA` in `js/epidemic-data.js` (or add a separate data file and merge at load time) so each country’s `years` include the new disease’s cases. The current code assumes a `measles` field per year; for multiple diseases you could use a `cases` field keyed by disease or add a small adapter in `getYearData` / config.
 
-## 🧮 Key Derived Metrics
+## Data files
 
-```js
-// All computed automatically in crisisData.js
+- **Vaccine coverage**: `Measles vaccination coverage 2026-17-02 11-10 UTC.json` (or `.csv`) in project root. Other diseases: add their JSON/CSV and set `vaccineJsonUrl` / `vaccineCsvUrl` in `DISEASE_CONFIG`.
+- **Epidemic data**: `js/epidemic-data.js` defines `EPIDEMIC_DATA`.
+- **World map**: `js/world-geo.js` defines `WORLD_GEOJSON` for the funding choropleth and vaccine-only country centroids.
 
-d.funding_pct     = (funded / requirements) * 100
-d.gap_usd         = requirements - funded                // USD billions
-d.budget_per_bene = (funded * 1e9) / (pin * 1e6)        // $ per person in need
-d.cbpf_coverage   = (cbpf_alloc / cbpf_req) * 100       // % of CBPF req met
-d.health_anomaly  = health_cluster_funded_pct < 25
-                    && health_workers_per_10k < 5        // WHO threshold flag
-d.who_gap         = max(0, 86 - health_spend_per_pin)   // $ gap vs WHO min
-```
+## Map modes
 
----
+- **Spread Circles**: Case-based circles (and R0-style radius).
+- **Funding Gap**: Choropleth or circles by gov. health funding per capita.
+- **Vaccine Coverage**: Circles colored by coverage % (red = gap, green = on target); 95% target line in the panel.
 
-## 🎨 Tech Stack
-
-| Layer | Technology |
-|---|---|
-| GIS Mapping | [Leaflet.js 1.9.4](https://leafletjs.com) + GeoJSON choropleth |
-| Charts | [Chart.js 4.4.1](https://chartjs.org) |
-| Base Tiles | CartoDB Dark / ArcGIS Satellite / OpenTopoMap |
-| Fonts | IBM Plex Mono · DM Sans · Bebas Neue (Google Fonts) |
-| Language | Vanilla HTML / CSS / JavaScript (ES6+) |
-| Build | None — zero dependencies, zero build step |
-
----
-
-## 🔌 Extending the Dashboard
-
-### Add a new country
-In `data/crisisData.js`, add an object to `window.CRISIS_DATA`:
-```js
-{
-  id: "XX", name: "Country Name", iso_a2: "XX", iso_a3: "XXX",
-  lat: 0, lng: 0,
-  pin: 5.0, requirements: 1.0, funded: 0.3,
-  health_workers_per_10k: 2.0,
-  cold_chain_coverage_pct: 25,
-  // ... see existing entries for full schema
-}
-```
-
-### Add a new map layer
-In `js/map.js`, add a key to the `COLOR` object:
-```js
-myLayer: d => {
-  const v = d.my_metric;
-  if (v < threshold1) return { fill: '#ff3b4e', opacity: 0.82 };
-  // ...
-},
-```
-Then add a button in `index.html` with `data-mode="myLayer"`.
-
-### Connect to a live API
-Replace the static data in `crisisData.js` with a `fetch()` call to the FTS API:
-```js
-fetch('https://api.unocha.org/v2/fts/flow/...')
-  .then(r => r.json())
-  .then(data => { /* transform and assign to window.CRISIS_DATA */ });
-```
-
----
-
-## 📋 Judges / UN Team Notes
-
-- All data is sourced from publicly available UN FTS, CBPF, WHO, and HDX datasets
-- The **Health Anomaly Detector** directly flags the "unusually high beneficiary-to-budget ratios" specified in the challenge brief
-- The **WHO threshold bar** provides a clinically actionable benchmark beyond simple funding percentage
-- The **Cold Chain layer** addresses a gap not covered in standard CBPF dashboards — critical for MSF, UNICEF Supply Division, and WFP medical commodity procurement teams
-- Purple polygon borders on the map visually distinguish countries where both health system capacity AND funding are simultaneously failing
-
----
-
-*Built for the UN Geo-Insight Challenge · 2024*
-*Judges: OCHA · Databricks*
+Legend and country panel labels (e.g. “Measles case load”, “Vaccine Coverage (MCV2)”) use `DISEASE_CONFIG[currentDisease]` so they stay correct when you add diseases.
