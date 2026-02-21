@@ -1,0 +1,196 @@
+country,region,income,r0,r_eff,2024,2025,2026,2027,2028,total_forecast
+Democratic Republic of the Congo,AFR,Low,2.0,0.8,3436476.6,23953.9,168.9,1.2,0.0,3460600.5
+Yemen,EMR,Low,1.3,0.9,1056754.7,97945.0,9124.0,849.9,79.2,1164752.8
+India,SEAR,Lower-middle,1.8,0.8,795131.1,9050.4,104.1,1.2,0.0,804286.8
+Nigeria,AFR,Lower-middle,1.2,0.9,456638.8,51610.9,5861.0,665.6,75.6,514851.9
+Ethiopia,AFR,Low,1.7,0.8,307916.5,4367.1,62.5,0.9,0.0,312347.0
+Pakistan,EMR,Lower-middle,1.5,0.8,258545.2,6369.2,158.2,3.9,0.1,265076.6
+Azerbaijan,EUR,Upper-middle,1.3,0.9,232137.5,10089.4,419.8,17.4,0.7,242664.8
+Iraq,EMR,Upper-middle,1.5,0.8,182981.3,4825.1,128.2,3.4,0.1,187938.1
+Indonesia,WPR,Upper-middle,2.3,0.7,177646.1,671.2,2.6,0.0,0.0,178319.9
+Chad,AFR,Low,1.6,0.8,168276.9,3698.4,82.0,1.8,0.0,172059.1
+Kazakhstan,EUR,Upper-middle,2.6,0.7,141165.3,396.8,1.1,0.0,0.0,141563.2
+Cameroon,AFR,Lower-middle,1.3,0.9,124443.1,10137.6,830.3,68.0,5.6,135484.6
+Russian Federation,EUR,High,2.5,0.7,123496.9,369.0,1.1,0.0,0.0,123867.0
+Liberia,AFR,Low,1.4,0.9,84903.5,4971.1,292.7,17.2,1.0,90185.6
+Afghanistan,EMR,Low,1.2,0.9,73499.5,12728.5,2212.9,384.7,66.9,88892.4
+Kyrgyzstan,EUR,Lower-middle,1.8,0.8,84087.7,860.1,8.9,0.1,0.0,84956.7
+South Sudan,AFR,Low,2.6,0.7,74319.4,208.7,0.6,0.0,0.0,74528.7
+Central African Republic,AFR,Low,1.7,0.8,47986.1,608.1,7.8,0.1,0.0,48602.1
+Zambia,AFR,Lower-middle,6.2,0.6,41491.5,23.6,0.0,0.0,0.0,41515.2
+Zimbabwe,AFR,Lower-middle,6.0,0.6,39538.3,16.6,0.0,0.0,0.0,39554.9
+Philippines,WPR,Lower-middle,1.8,0.8,35672.5,426.5,5.1,0.1,0.0,36104.2
+Angola,AFR,Lower-middle,2.2,0.7,35321.4,152.1,0.7,0.0,0.0,35474.1
+Romania,EUR,High,3.0,0.7,32005.1,58.1,0.1,0.0,0.0,32063.3
+Somalia,EMR,Low,2.4,0.7,31060.7,115.5,0.4,0.0,0.0,31176.7
+United Republic of Tanzania,AFR,Lower-middle,2.5,0.7,27023.2,76.9,0.2,0.0,0.0,27100.3
+Niger,AFR,Low,1.6,0.8,24115.2,519.8,11.3,0.2,0.0,24646.5
+Uzbekistan,EUR,Lower-middle,1.3,0.9,21979.5,1347.9,83.2,5.1,0.3,23416.0
+Sudan,EMR,Low,1.4,0.8,22023.2,775.8,27.5,1.0,0.0,22827.6
+Malaysia,WPR,Upper-middle,2.0,0.7,21694.2,137.8,0.9,0.0,0.0,21832.9
+Ghana,AFR,Lower-middle,2.6,0.7,20963.5,53.3,0.1,0.0,0.0,21017.0
+Armenia,EUR,Upper-middle,1.1,0.9,15947.0,3507.1,774.0,170.8,37.7,20436.5
+Syrian Arab Republic,EMR,Low,1.2,0.9,17101.9,2014.2,238.4,28.2,3.3,19386.1
+Saudi Arabia,EMR,High,4.7,0.7,17385.5,14.2,0.0,0.0,0.0,17399.7
+Nepal,SEAR,Lower-middle,1.4,0.8,16005.1,650.1,26.6,1.1,0.0,16682.9
+Burundi,AFR,Low,2.8,0.7,15003.2,31.7,0.1,0.0,0.0,15035.0
+Togo,AFR,Low,1.3,0.9,12857.4,795.9,49.6,3.1,0.2,13706.2
+Côte d'Ivoire,AFR,Lower-middle,2.3,0.7,13584.1,55.7,0.2,0.0,0.0,13640.1
+Sri Lanka,SEAR,Lower-middle,1.5,0.8,12224.5,344.6,9.8,0.3,0.0,12579.2
+Sierra Leone,AFR,Low,1.5,0.8,9704.2,270.3,7.6,0.2,0.0,9982.3
+Bangladesh,SEAR,Lower-middle,1.2,0.9,7806.5,1563.6,314.4,63.2,12.7,9760.4
+Gabon,AFR,Upper-middle,3.9,0.7,9405.6,10.4,0.0,0.0,0.0,9416.1
+Burkina Faso,AFR,Low,1.8,0.8,8294.0,94.1,1.1,0.0,0.0,8389.3
+Kenya,AFR,Lower-middle,2.9,0.7,7953.8,16.4,0.0,0.0,0.0,7970.3
+Iran (Islamic Republic of),EMR,Upper-middle,1.8,0.8,7789.1,82.6,0.8,0.0,0.0,7872.6
+South Africa,AFR,Upper-middle,9.4,0.6,7264.2,3.0,0.0,0.0,0.0,7267.2
+Senegal,AFR,Lower-middle,1.8,0.8,6932.6,81.6,1.0,0.0,0.0,7015.2
+China,WPR,Upper-middle,2.3,0.7,6196.9,25.4,0.1,0.0,0.0,6222.4
+Benin,AFR,Lower-middle,1.8,0.8,5674.2,56.7,0.6,0.0,0.0,5731.5
+Equatorial Guinea,AFR,Upper-middle,1.3,0.9,5276.6,375.2,26.8,1.9,0.1,5680.7
+Tajikistan,EUR,Lower-middle,1.4,0.8,5264.4,278.7,14.8,0.8,0.0,5558.8
+Mozambique,AFR,Low,6.2,0.6,4826.6,2.8,0.0,0.0,0.0,4829.4
+Mali,AFR,Low,1.7,0.8,4737.4,72.1,1.1,0.0,0.0,4810.7
+Egypt,EMR,Lower-middle,1.4,0.8,4234.1,144.5,5.0,0.2,0.0,4383.7
+Djibouti,EMR,Lower-middle,2.5,0.7,4239.1,13.2,0.0,0.0,0.0,4252.3
+Mauritania,AFR,Lower-middle,1.8,0.8,4123.4,46.2,0.5,0.0,0.0,4170.1
+Uganda,AFR,Low,2.3,0.7,3985.5,16.4,0.1,0.0,0.0,4002.0
+Congo,AFR,Lower-middle,2.5,0.7,3610.9,10.4,0.0,0.0,0.0,3621.3
+United Arab Emirates,EMR,High,6.6,0.6,3528.5,1.9,0.0,0.0,0.0,3530.4
+Lebanon,EMR,Lower-middle,2.4,0.7,3337.2,11.3,0.0,0.0,0.0,3348.5
+Madagascar,AFR,Low,2.6,0.7,3298.3,9.0,0.0,0.0,0.0,3307.3
+Algeria,AFR,Upper-middle,1.7,0.8,2520.1,31.0,0.4,0.0,0.0,2551.6
+Libya,EMR,Upper-middle,3.5,0.7,2122.2,2.8,0.0,0.0,0.0,2125.0
+Belarus,EUR,Upper-middle,2.5,0.7,1826.1,5.5,0.0,0.0,0.0,1831.6
+Guinea,AFR,Lower-middle,1.5,0.8,1412.4,39.1,1.1,0.0,0.0,1452.6
+Malawi,AFR,Low,5.4,0.6,1299.7,0.9,0.0,0.0,0.0,1300.6
+Ukraine,EUR,Upper-middle,1.6,0.8,902.0,16.9,0.3,0.0,0.0,919.2
+Qatar,EMR,High,8.5,0.6,899.7,0.4,0.0,0.0,0.0,900.1
+Comoros,AFR,Lower-middle,1.5,0.8,793.4,25.2,0.8,0.0,0.0,819.4
+Rwanda,AFR,Low,15.0,0.6,736.3,0.2,0.0,0.0,0.0,736.5
+Eritrea,AFR,Low,1.6,0.8,717.4,12.0,0.2,0.0,0.0,729.6
+Georgia,EUR,Upper-middle,1.4,0.8,642.8,25.3,1.0,0.0,0.0,669.2
+Belgium,EUR,High,3.2,0.7,572.0,0.9,0.0,0.0,0.0,572.9
+Serbia,EUR,Upper-middle,2.3,0.7,501.1,2.1,0.0,0.0,0.0,503.2
+Viet Nam,WPR,Lower-middle,1.9,0.8,482.4,3.7,0.0,0.0,0.0,486.1
+Thailand,SEAR,Upper-middle,6.4,0.6,468.4,0.3,0.0,0.0,0.0,468.7
+Switzerland,EUR,High,3.1,0.7,446.3,0.7,0.0,0.0,0.0,447.1
+Botswana,AFR,Upper-middle,14.5,0.6,430.1,0.1,0.0,0.0,0.0,430.2
+Gambia,AFR,Low,2.2,0.7,389.1,1.8,0.0,0.0,0.0,391.0
+Myanmar,SEAR,Lower-middle,1.2,0.9,331.8,34.8,3.7,0.4,0.0,370.7
+Namibia,AFR,Upper-middle,8.4,0.6,298.2,0.1,0.0,0.0,0.0,298.4
+Honduras,AMR,Lower-middle,1.9,1.0,56.2,56.2,56.2,56.2,56.1,280.9
+Haiti,AMR,Lower-middle,1.9,1.0,56.2,56.2,56.2,56.2,56.2,280.9
+Paraguay,AMR,Upper-middle,2.8,1.0,56.2,56.2,56.2,56.2,56.2,280.9
+Nicaragua,AMR,Lower-middle,2.7,1.0,56.2,56.2,56.2,56.1,56.1,280.9
+Venezuela (Bolivarian Republic of),AMR,Upper-middle,3.4,1.0,56.2,56.2,56.2,56.1,56.1,280.8
+Guatemala,AMR,Upper-middle,1.7,1.0,56.2,56.2,56.2,56.1,56.1,280.8
+Jamaica,AMR,Upper-middle,4.9,1.0,56.2,56.2,56.2,56.1,56.1,280.8
+Bolivia (Plurinational State of),AMR,Lower-middle,3.7,1.0,56.2,56.2,56.1,56.1,56.1,280.8
+Cabo Verde,AFR,Lower-middle,3.9,1.0,56.2,56.1,56.1,56.1,56.1,280.8
+Guyana,AMR,High,3.8,1.0,56.2,56.2,56.1,56.1,56.1,280.8
+Uruguay,AMR,High,5.8,1.0,56.2,56.2,56.1,56.1,56.1,280.8
+Suriname,AMR,Upper-middle,5.1,1.0,56.2,56.1,56.1,56.1,56.0,280.6
+Trinidad and Tobago,AMR,High,2.2,1.0,56.2,56.1,56.1,56.1,56.0,280.6
+Panama,AMR,High,2.5,1.0,56.2,56.1,56.0,55.9,55.8,280.2
+El Salvador,AMR,Upper-middle,3.1,1.0,56.2,56.1,56.1,56.0,55.9,280.2
+Cuba,AMR,Upper-middle,6.0,1.0,56.2,56.1,56.0,55.9,55.8,280.1
+Sao Tome and Principe,AFR,Lower-middle,6.0,1.0,56.2,56.1,55.9,55.7,55.5,279.4
+Barbados,AMR,High,2.0,1.0,56.2,55.9,55.5,54.8,54.0,276.4
+Belize,AMR,Upper-middle,3.7,1.0,56.2,55.8,55.3,54.5,53.4,275.2
+Saint Lucia,AMR,Upper-middle,2.7,1.0,56.2,55.7,55.1,54.1,52.9,274.0
+Montenegro,EUR,Upper-middle,3.8,1.0,56.2,55.7,54.9,53.8,52.3,272.9
+Grenada,AMR,Upper-middle,2.1,1.0,56.2,55.7,54.9,53.8,52.3,272.8
+Bahamas,AMR,High,3.6,1.0,56.1,55.5,54.4,52.9,50.9,269.8
+Saint Vincent and the Grenadines,AMR,Upper-middle,3.8,1.0,56.1,55.1,53.5,51.3,48.5,264.6
+Saint Kitts and Nevis,AMR,High,2.4,1.0,56.0,54.8,52.6,49.6,45.9,259.0
+Dominica,AMR,Upper-middle,3.4,1.0,56.0,54.8,52.6,49.6,45.9,258.9
+Antigua and Barbuda,AMR,High,4.8,1.0,56.0,54.8,52.6,49.6,45.9,258.8
+Liechtenstein,EUR,High,5.1,1.0,55.7,52.6,47.3,40.8,33.8,230.1
+Palau,WPR,High,8.3,1.0,55.3,50.5,42.8,33.9,25.5,208.0
+Australia,WPR,High,4.2,0.7,205.5,0.2,0.0,0.0,0.0,205.7
+Cambodia,WPR,Lower-middle,1.4,0.8,186.9,8.2,0.4,0.0,0.0,195.6
+Albania,EUR,Upper-middle,1.6,0.8,172.4,2.8,0.0,0.0,0.0,175.3
+Oman,EMR,High,9.9,0.6,174.7,0.1,0.0,0.0,0.0,174.8
+Lesotho,AFR,Lower-middle,4.9,0.7,129.8,0.1,0.0,0.0,0.0,129.9
+Bosnia and Herzegovina,EUR,Upper-middle,2.3,0.7,127.9,0.5,0.0,0.0,0.0,128.3
+Spain,EUR,High,3.3,0.7,126.8,0.2,0.0,0.0,0.0,127.0
+Tunisia,EMR,Lower-middle,2.0,0.8,110.1,0.8,0.0,0.0,0.0,110.9
+Guinea-Bissau,AFR,Low,1.4,0.8,87.3,4.2,0.2,0.0,0.0,91.7
+Bhutan,SEAR,Lower-middle,2.8,0.7,90.3,0.2,0.0,0.0,0.0,90.5
+Papua New Guinea,WPR,Lower-middle,7.4,0.6,86.2,0.0,0.0,0.0,0.0,86.2
+Tonga,WPR,Upper-middle,10.6,0.6,83.0,0.0,0.0,0.0,0.0,83.0
+Solomon Islands,WPR,Lower-middle,30.0,0.9,35.6,13.2,4.9,1.8,0.7,56.3
+Slovakia,EUR,High,3.4,0.7,50.6,0.1,0.0,0.0,0.0,50.7
+Timor-Leste,SEAR,Lower-middle,9.0,0.6,49.4,0.0,0.0,0.0,0.0,49.4
+Kuwait,EMR,High,6.4,0.6,43.9,0.0,0.0,0.0,0.0,44.0
+Maldives,SEAR,Upper-middle,3.7,0.7,40.6,0.0,0.0,0.0,0.0,40.6
+"occupied Palestinian territory, including east Jerusalem",EMR,Lower-middle,1.8,0.8,35.7,0.4,0.0,0.0,0.0,36.0
+Turkmenistan,EUR,Upper-middle,1.2,0.9,26.4,4.6,0.8,0.1,0.0,32.0
+Bahrain,EMR,High,2.5,0.7,28.4,0.1,0.0,0.0,0.0,28.5
+Republic of Moldova,EUR,Upper-middle,2.6,0.7,27.8,0.1,0.0,0.0,0.0,27.9
+Lao People's Democratic Republic,WPR,Lower-middle,1.7,0.8,24.7,0.3,0.0,0.0,0.0,25.1
+Eswatini,AFR,Lower-middle,5.8,0.6,22.3,0.0,0.0,0.0,0.0,22.3
+Kiribati,WPR,Lower-middle,30.0,0.9,20.4,1.6,0.1,0.0,0.0,22.2
+Croatia,EUR,High,6.8,0.6,21.8,0.0,0.0,0.0,0.0,21.8
+Norway,EUR,High,4.8,0.7,15.4,0.0,0.0,0.0,0.0,15.4
+Mongolia,WPR,Upper-middle,1.6,0.8,13.3,0.2,0.0,0.0,0.0,13.5
+Mauritius,AFR,Upper-middle,1.7,0.8,12.5,0.2,0.0,0.0,0.0,12.6
+Mexico,AMR,Upper-middle,1.9,0.8,11.7,0.1,0.0,0.0,0.0,11.8
+North Macedonia,EUR,Upper-middle,1.9,0.8,11.3,0.1,0.0,0.0,0.0,11.4
+Chile,AMR,High,1.9,0.8,11.3,0.1,0.0,0.0,0.0,11.3
+Morocco,EMR,Lower-middle,2.0,0.7,10.8,0.1,0.0,0.0,0.0,10.9
+Latvia,EUR,High,2.1,0.7,10.5,0.1,0.0,0.0,0.0,10.6
+Bulgaria,EUR,High,2.1,0.7,10.6,0.1,0.0,0.0,0.0,10.6
+Jordan,EMR,Lower-middle,2.1,0.7,10.4,0.1,0.0,0.0,0.0,10.5
+Greece,EUR,High,2.2,0.7,10.4,0.1,0.0,0.0,0.0,10.4
+Republic of Korea,WPR,High,2.2,0.7,10.2,0.0,0.0,0.0,0.0,10.3
+Lithuania,EUR,High,2.3,0.7,9.9,0.0,0.0,0.0,0.0,9.9
+Ecuador,AMR,Upper-middle,2.3,0.7,9.9,0.0,0.0,0.0,0.0,9.9
+Malta,EUR,High,2.3,0.7,9.8,0.0,0.0,0.0,0.0,9.9
+Seychelles,AFR,High,2.6,0.7,9.4,0.0,0.0,0.0,0.0,9.5
+Portugal,EUR,High,2.5,0.7,9.4,0.0,0.0,0.0,0.0,9.5
+Peru,AMR,Upper-middle,2.6,0.7,9.3,0.0,0.0,0.0,0.0,9.3
+Brazil,AMR,Upper-middle,2.7,0.7,9.2,0.0,0.0,0.0,0.0,9.2
+Singapore,WPR,High,2.8,0.7,9.0,0.0,0.0,0.0,0.0,9.1
+Argentina,AMR,Upper-middle,2.9,0.7,8.9,0.0,0.0,0.0,0.0,8.9
+Costa Rica,AMR,Upper-middle,2.9,0.7,8.9,0.0,0.0,0.0,0.0,8.9
+Hungary,EUR,High,3.0,0.7,8.7,0.0,0.0,0.0,0.0,8.8
+Dominican Republic,AMR,Upper-middle,2.8,0.7,8.7,0.0,0.0,0.0,0.0,8.8
+Italy,EUR,High,3.1,0.7,8.6,0.0,0.0,0.0,0.0,8.6
+Estonia,EUR,High,3.2,0.7,8.5,0.0,0.0,0.0,0.0,8.5
+Israel,EUR,High,3.3,0.7,8.4,0.0,0.0,0.0,0.0,8.4
+Türkiye,EUR,Upper-middle,3.5,0.7,8.2,0.0,0.0,0.0,0.0,8.3
+Cyprus,EUR,High,3.7,0.7,8.1,0.0,0.0,0.0,0.0,8.1
+Poland,EUR,High,4.1,0.7,7.9,0.0,0.0,0.0,0.0,8.0
+Austria,EUR,High,4.0,0.7,8.0,0.0,0.0,0.0,0.0,8.0
+Canada,AMR,High,4.3,0.7,7.8,0.0,0.0,0.0,0.0,7.9
+Iceland,EUR,High,4.4,0.7,7.9,0.0,0.0,0.0,0.0,7.9
+United Kingdom of Great Britain and Northern Ireland,EUR,High,4.5,0.7,7.8,0.0,0.0,0.0,0.0,7.8
+Colombia,AMR,Upper-middle,4.5,0.7,7.8,0.0,0.0,0.0,0.0,7.8
+Samoa,WPR,Lower-middle,4.9,0.7,7.7,0.0,0.0,0.0,0.0,7.7
+Czechia,EUR,High,4.7,0.7,7.7,0.0,0.0,0.0,0.0,7.7
+Finland,EUR,High,4.7,0.7,7.7,0.0,0.0,0.0,0.0,7.7
+Sweden,EUR,High,4.9,0.7,7.7,0.0,0.0,0.0,0.0,7.7
+Denmark,EUR,High,4.7,0.7,7.7,0.0,0.0,0.0,0.0,7.7
+New Zealand,WPR,High,5.1,0.7,7.6,0.0,0.0,0.0,0.0,7.6
+San Marino,EUR,High,5.0,0.7,7.6,0.0,0.0,0.0,0.0,7.6
+Netherlands (Kingdom of the),EUR,High,5.5,0.6,7.5,0.0,0.0,0.0,0.0,7.5
+Slovenia,EUR,High,5.5,0.6,7.5,0.0,0.0,0.0,0.0,7.5
+Japan,WPR,High,5.3,0.6,7.5,0.0,0.0,0.0,0.0,7.5
+Andorra,EUR,High,5.8,0.6,7.4,0.0,0.0,0.0,0.0,7.4
+Germany,EUR,High,6.0,0.6,7.4,0.0,0.0,0.0,0.0,7.4
+Ireland,EUR,High,6.1,0.6,7.4,0.0,0.0,0.0,0.0,7.4
+United States of America,AMR,High,5.9,0.6,7.4,0.0,0.0,0.0,0.0,7.4
+France,EUR,High,6.9,0.6,7.3,0.0,0.0,0.0,0.0,7.3
+Luxembourg,EUR,High,7.5,0.6,7.2,0.0,0.0,0.0,0.0,7.2
+Fiji,WPR,Upper-middle,7.6,0.6,7.2,0.0,0.0,0.0,0.0,7.2
+Monaco,EUR,High,7.5,0.6,7.2,0.0,0.0,0.0,0.0,7.2
+Vanuatu,WPR,Lower-middle,7.6,0.6,7.2,0.0,0.0,0.0,0.0,7.2
+Brunei Darussalam,WPR,High,8.5,0.6,7.1,0.0,0.0,0.0,0.0,7.1
+Cook Islands,WPR,High,16.6,0.6,6.8,0.0,0.0,0.0,0.0,6.8
+Micronesia (Federated States of),WPR,Lower-middle,18.4,0.5,4.7,0.0,0.0,0.0,0.0,4.7
+Marshall Islands,WPR,Upper-middle,30.0,0.3,3.4,0.0,0.0,0.0,0.0,3.4
+Nauru,WPR,High,30.0,0.3,3.3,0.0,0.0,0.0,0.0,3.3
+Niue,WPR,High,30.0,0.3,3.3,0.0,0.0,0.0,0.0,3.3
+Tuvalu,WPR,Upper-middle,30.0,0.3,3.3,0.0,0.0,0.0,0.0,3.3
