@@ -1,0 +1,16 @@
+Welcome to the RAG Chatbot!
+
+This is a sample document to help you get started. You can replace this with your own documents.
+
+The RAG (Retrieval-Augmented Generation) chatbot uses LlamaIndex to:
+1. Load and index documents from this folder
+2. Create vector embeddings for semantic search
+3. Retrieve relevant context when you ask questions
+4. Generate answers using Google's Gemini API
+
+To use this chatbot:
+- Add your own .txt, .md, .pdf, or .docx files to this docs/ folder
+- Run: python rag_chatbot.py
+- Start asking questions about your documents!
+
+The chatbot maintains conversation history, so you can have multi-turn conversations about your documents.
