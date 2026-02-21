@@ -17,8 +17,17 @@ function computeScaleStats(entries) {
 function renderYear(year) {
   const yr = String(year);
   const entries = getYearData(yr);
-  const maxCases = Math.max(...entries.map(function (e) { return e.measles || 0; }), 1);
+  const usePerCapita = currentDisease === 'covid19';
+  const caseVal = function (e) {
+    if (usePerCapita && e.cases_per_1M != null && !isNaN(e.cases_per_1M)) return e.cases_per_1M;
+    return e.measles != null ? e.measles : 0;
+  };
+  const maxCases = Math.max(...entries.map(caseVal), 1);
   const stats = computeScaleStats(entries);
+  if (usePerCapita) {
+    var caseVals = entries.map(function (e) { return caseVal(e); }).filter(function (v) { return v > 0; });
+    stats.cases = caseVals.length ? { median: percentile(caseVals, 50), p75: percentile(caseVals, 75), max: Math.max.apply(null, caseVals) } : null;
+  }
   const cfg = DISEASE_CONFIG[currentDisease] || DISEASE_CONFIG.measles;
   const diseaseLabel = cfg.label || 'Cases';
   const antigenLabel = cfg.antigenLabel || '';
@@ -32,17 +41,22 @@ function renderYear(year) {
   const legendLabels = document.getElementById('legend-labels');
   if (legendTitle && legendBar && legendLabels) {
     if (currentMode === 'coverage') {
-      legendTitle.textContent = 'Vaccine coverage (' + antigenLabel + ')';
+      if (currentDisease === 'covid19') {
+        legendTitle.textContent = 'COVID-19 vaccine doses (per 1M pop.)';
+        legendLabels.innerHTML = '<span>No data</span><span>Low</span><span>Relative scale</span><span>High</span>';
+      } else {
+        legendTitle.textContent = 'Vaccine coverage (' + antigenLabel + ')';
+        legendLabels.innerHTML = '<span>No data</span><span>Low</span><span>95% target</span><span>High</span>';
+      }
       legendBar.className = 'legend-bar legend-coverage';
       legendBar.style.background = 'linear-gradient(to right, #b4322d, #d4a84b, #4a7c59)';
-      legendLabels.innerHTML = '<span>No data</span><span>Low</span><span>95% target</span><span>High</span>';
     } else if (currentMode === 'funding') {
       legendTitle.textContent = 'Funding gap (burden vs funding)';
       legendBar.className = 'legend-bar legend-gap';
       legendBar.style.background = 'linear-gradient(to right, #3c8c50, #d1e6c3, #c03020)';
       legendLabels.innerHTML = '<span>Overfunded</span><span>Neutral</span><span>Underfunded</span>';
     } else {
-      legendTitle.textContent = diseaseLabel + ' case load';
+      legendTitle.textContent = usePerCapita ? 'Cases per 1M (per capita)' : (cfg.casesLabel != null ? cfg.casesLabel : diseaseLabel + ' case load');
       legendBar.className = 'legend-bar legend-cases';
       legendBar.style.background = 'linear-gradient(to right, #fcfaf5, #e8c040, #b03028)';
       legendLabels.innerHTML = '<span>No data</span><span>Low</span><span>High</span><span>Severe</span>';
@@ -80,15 +94,15 @@ function renderYear(year) {
     } else if (currentMode === 'coverage') {
       renderCoverageCircle(e, stats.coverage);
     } else {
-      renderSpreadCircle(e, maxCases, stats.cases);
+      renderSpreadCircle(e, maxCases, stats.cases, usePerCapita);
     }
   }
 
   if (currentMode === 'both' && WORLD_GEOJSON) renderGeoJson(entries, stats.gap);
 }
 
-function renderSpreadCircle(e, maxCases, caseStats) {
-  const cases = e.measles != null ? e.measles : 0;
+function renderSpreadCircle(e, maxCases, caseStats, usePerCapita) {
+  const cases = (usePerCapita && e.cases_per_1M != null && !isNaN(e.cases_per_1M)) ? e.cases_per_1M : (e.measles != null ? e.measles : 0);
   if ((cases === 0 || cases == null) && currentMode !== 'both') {
     const dot = L.circleMarker([e.lat, e.lng], {
       radius: 3,
@@ -114,11 +128,12 @@ function renderSpreadCircle(e, maxCases, caseStats) {
   });
   const marker = L.marker([e.lat, e.lng], { icon: icon, zIndexOffset: Math.floor(cases) }).addTo(map);
   marker.on('click', function () { showCountry(e.cc); });
-  var casesLabel = (cases != null && cases > 0) ? cases.toLocaleString() : 'No data available';
+  var casesLabel = (cases != null && cases > 0) ? cases.toLocaleString(undefined, { maximumFractionDigits: 0 }) : 'No data available';
+  var casesRowLabel = usePerCapita ? 'Cases per 1M' : (currentDisease === 'covid19' ? 'Total cases' : 'Cases');
   var fundLabel = (e.gghed_per_capita != null && e.gghed_per_capita > 0) ? '$' + e.gghed_per_capita.toFixed(0) + '/cap' : 'No data available';
   var popLabel = (e.pop_density != null) ? e.pop_density.toFixed(1) + '/km²' : 'No data available';
   marker.bindTooltip(
-    '<div style="font-family:\'DM Mono\',monospace;font-size:11px;"><strong style="color:#000">' + e.name + '</strong><br>Cases: <strong>' + casesLabel + '</strong><br>Gov. Health Funding: ' + fundLabel + '<br>Pop. Density: ' + popLabel + '<br>Adj. R₀ (indicative): ' + r0.toFixed(1) + '</div>',
+    '<div style="font-family:\'DM Mono\',monospace;font-size:11px;"><strong style="color:#000">' + e.name + '</strong><br>' + casesRowLabel + ': <strong>' + casesLabel + '</strong><br>Gov. Health Funding: ' + fundLabel + '<br>Pop. Density: ' + popLabel + '<br>Adj. R₀ (indicative): ' + r0.toFixed(1) + '</div>',
     { direction: 'top', offset: [0, -8] }
   );
   markers[e.cc] = marker;
@@ -156,10 +171,14 @@ function renderCoverageCircle(e, coverageStats) {
     weight: 1,
   }).addTo(map);
   circle.on('click', function () { showCountry(e.cc); });
-  var covLabel = (coverage != null && !isNaN(coverage)) ? coverage.toFixed(1) + '%' : 'No data available';
-  var targetLabel = (e.target_number != null && e.target_number > 0) ? e.target_number.toLocaleString() : 'No data available';
-  var dosesLabel = (e.doses != null && e.doses > 0) ? e.doses.toLocaleString() : 'No data available';
-  circle.bindTooltip('<strong style="color:#000">' + e.name + '</strong><br>Vaccine Coverage (' + antigenLabel + '): ' + covLabel + '<br>Target: ' + targetLabel + '<br>Doses Given: ' + dosesLabel, { direction: 'top' });
+  var covLabel = (e.vaccine_coverage != null && !isNaN(e.vaccine_coverage)) ? e.vaccine_coverage.toFixed(1) + '%' : 'No data available';
+  var dosesLabel = (e.doses != null && e.doses > 0) ? e.doses.toLocaleString(undefined, { maximumFractionDigits: 0 }) : 'No data available';
+  if (currentDisease === 'covid19') {
+    circle.bindTooltip('<strong style="color:#000">' + e.name + '</strong><br>Doses (per 1M pop., ÷2 for 2 doses/person): ' + dosesLabel + '<br>Source: COVID-19 vaccine data', { direction: 'top' });
+  } else {
+    var targetLabel = (e.target_number != null && e.target_number > 0) ? e.target_number.toLocaleString() : 'No data available';
+    circle.bindTooltip('<strong style="color:#000">' + e.name + '</strong><br>Vaccine Coverage (' + antigenLabel + '): ' + covLabel + '<br>Target: ' + targetLabel + '<br>Doses Given: ' + (e.doses != null && e.doses > 0 ? (e.doses / 1e6).toFixed(2) + 'M' : 'No data available'), { direction: 'top' });
+  }
   markers[e.cc] = circle;
 }
 
@@ -200,11 +219,15 @@ function renderCoverageGeoJson(entries, coverageStats) {
       const e = byCode[cc];
       const cov = e && e.vaccine_coverage != null ? e.vaccine_coverage : null;
       const covLabel = cov != null ? cov.toFixed(1) + '%' : 'No data available';
+      const dosesLabel = e && e.doses != null && e.doses > 0 ? e.doses.toLocaleString(undefined, { maximumFractionDigits: 0 }) : 'No data available';
       const targetLabel = e && e.target_number != null && e.target_number > 0 ? e.target_number.toLocaleString() : 'No data available';
-      const dosesLabel = e && e.doses != null && e.doses > 0 ? e.doses.toLocaleString() : 'No data available';
       const name = (e && e.name) || cc || 'Unknown';
       layer.on('click', function () { if (cc) showCountry(cc); });
-      layer.bindTooltip('<strong style="color:#000">' + name + '</strong><br>Vaccine Coverage (' + antigenLabel + '): ' + covLabel + '<br>Target: ' + targetLabel + '<br>Doses Given: ' + dosesLabel, { direction: 'top' });
+      if (currentDisease === 'covid19') {
+        layer.bindTooltip('<strong style="color:#000">' + name + '</strong><br>Doses (per 1M pop., ÷2 for 2 doses/person): ' + dosesLabel + '<br>Source: COVID-19 vaccine data', { direction: 'top' });
+      } else {
+        layer.bindTooltip('<strong style="color:#000">' + name + '</strong><br>Vaccine Coverage (' + antigenLabel + '): ' + covLabel + '<br>Target: ' + targetLabel + '<br>Doses Given: ' + dosesLabel, { direction: 'top' });
+      }
     },
   }).addTo(map);
 }

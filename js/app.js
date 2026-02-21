@@ -42,9 +42,23 @@
     });
   }
 
+  function getYearMin() {
+    return currentDisease === 'covid19' ? (typeof COVID19_YEAR_MIN !== 'undefined' ? COVID19_YEAR_MIN : 2020) : (YEAR_MIN || 2000);
+  }
+  function getYearMax() {
+    return currentDisease === 'covid19' ? (typeof COVID19_YEAR_MAX !== 'undefined' ? COVID19_YEAR_MAX : 2023) : (YEAR_MAX || 2023);
+  }
+  function updateYearRange() {
+    var min = getYearMin();
+    var max = getYearMax();
+    yearSlider.min = min;
+    yearSlider.max = max;
+    var y = parseInt(currentYear, 10);
+    if (y < min) { currentYear = String(min); yearSlider.value = min; yearDisplay.textContent = currentYear; }
+    else if (y > max) { currentYear = String(max); yearSlider.value = max; yearDisplay.textContent = currentYear; }
+  }
   if (typeof YEAR_MIN !== 'undefined' && typeof YEAR_MAX !== 'undefined') {
-    yearSlider.min = YEAR_MIN;
-    yearSlider.max = YEAR_MAX;
+    updateYearRange();
   }
 
   yearSlider.addEventListener('input', function () {
@@ -55,7 +69,7 @@
   });
 
   document.getElementById('btn-prev').addEventListener('click', function () {
-    const y = Math.max(YEAR_MIN || 2000, parseInt(currentYear, 10) - 1);
+    const y = Math.max(getYearMin(), parseInt(currentYear, 10) - 1);
     currentYear = String(y);
     yearSlider.value = y;
     yearDisplay.textContent = currentYear;
@@ -64,7 +78,7 @@
   });
 
   document.getElementById('btn-next').addEventListener('click', function () {
-    const y = Math.min(YEAR_MAX || 2023, parseInt(currentYear, 10) + 1);
+    const y = Math.min(getYearMax(), parseInt(currentYear, 10) + 1);
     currentYear = String(y);
     yearSlider.value = y;
     yearDisplay.textContent = currentYear;
@@ -84,7 +98,7 @@
       document.getElementById('btn-play').className = 'btn';
       playInterval = setInterval(function () {
         let y = parseInt(currentYear, 10) + 1;
-        if (y > (YEAR_MAX || 2023)) y = YEAR_MIN || 2000;
+        if (y > getYearMax()) y = getYearMin();
         currentYear = String(y);
         yearSlider.value = y;
         yearDisplay.textContent = currentYear;
@@ -100,7 +114,9 @@
       document.querySelectorAll('.disease-tab').forEach(function (t) { t.classList.remove('active'); });
       tab.classList.add('active');
       currentDisease = tab.dataset.disease;
+      updateYearRange();
       renderYear(currentYear);
+      if (selectedCountry) showCountry(selectedCountry);
     });
   });
 
@@ -114,7 +130,9 @@
     });
   });
 
-  loadVaccineData()
-    .then(function () { renderYear(currentYear); })
+  Promise.all([
+    loadVaccineData(),
+    typeof loadCovid19Data === 'function' ? loadCovid19Data() : Promise.resolve()
+  ]).then(function () { renderYear(currentYear); })
     .catch(function () { renderYear(currentYear); });
 })();

@@ -246,6 +246,7 @@ function parseAndMergeVaccineCSV(text, config) {
 function loadVaccineData(diseaseKey) {
   diseaseKey = diseaseKey || currentDisease;
   const config = DISEASE_CONFIG[diseaseKey] || DISEASE_CONFIG.measles;
+  if (!config.vaccineJsonUrl && !config.vaccineCsvUrl) return Promise.resolve();
   const jsonUrl = config.vaccineJsonUrl != null ? config.vaccineJsonUrl : 'Measles%20vaccination%20coverage%202026-17-02%2011-10%20UTC.json';
   const csvUrl = config.vaccineCsvUrl != null ? config.vaccineCsvUrl : 'Measles%20vaccination%20coverage%202026-17-02%2011-10%20UTC.csv';
   return fetch(jsonUrl)
@@ -258,3 +259,195 @@ function loadVaccineData(diseaseKey) {
         .catch(function (e) { console.warn('Vaccine data not loaded (serve folder over HTTP):', e); });
     });
 }
+
+/** COVID-19: cases and vaccine doses by country/year. Uses same funding (EPIDEMIC_DATA) for gap. */
+var COVID19_CASES = {};       // cc -> { year -> casesPer1M (converted to total when population available) }
+var COVID19_CASES_RAW = {};   // cc -> { year -> casesPer1M } (always per 1M, for conversion)
+var COVID19_VACCINE = {};     // cc -> { year -> { dosesPer1M, vaccine_coverage } }
+var COVID19_NAMES = {};       // cc -> entity name
+var COVID19_POPULATION = {};  // cc -> population (2020 or single year) for per-1M → total conversion
+
+function parseCovid19CasesCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return;
+  for (let i = 1; i < lines.length; i++) {
+    const row = parseCSVLine(lines[i]);
+    if (row.length < 4) continue;
+    const name = (row[0] || '').trim();
+    const code = (row[1] || '').trim();
+    const year = String((row[2] || '').trim());
+    if (!code || year === '2024') continue;
+    let val = parseFloat(String(row[3] || '0').replace(/[^\d.-]/g, ''));
+    if (isNaN(val)) val = 0;
+    if (!COVID19_CASES_RAW[code]) COVID19_CASES_RAW[code] = {};
+    COVID19_CASES_RAW[code][year] = val;
+    if (name && !COVID19_NAMES[code]) COVID19_NAMES[code] = name;
+  }
+  applyCovid19PopulationConversion();
+}
+
+/** Convert cases per 1M to total cases using COVID19_POPULATION when available. */
+function applyCovid19PopulationConversion() {
+  COVID19_CASES = {};
+  for (const code of Object.keys(COVID19_CASES_RAW)) {
+    COVID19_CASES[code] = {};
+    const pop = COVID19_POPULATION[code] != null ? Number(COVID19_POPULATION[code]) : null;
+    for (const year of Object.keys(COVID19_CASES_RAW[code])) {
+      const per1M = COVID19_CASES_RAW[code][year];
+      if (pop != null && pop > 0) {
+        COVID19_CASES[code][year] = (per1M / 1e6) * pop;
+      } else {
+        COVID19_CASES[code][year] = per1M;
+      }
+    }
+  }
+}
+
+function parseCovid19VaccineCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return;
+  for (let i = 1; i < lines.length; i++) {
+    const row = parseCSVLine(lines[i]);
+    if (row.length < 4) continue;
+    const code = (row[1] || '').trim();
+    const year = String((row[2] || '').trim());
+    if (!code || year === '2024') continue;
+    const name = (row[0] || '').trim();
+    let dosesPer1M = parseFloat(String(row[3] || '0').replace(/[^\d.-]/g, ''));
+    if (isNaN(dosesPer1M)) dosesPer1M = 0;
+    if (!COVID19_VACCINE[code]) COVID19_VACCINE[code] = {};
+    COVID19_VACCINE[code][year] = { dosesPer1M: dosesPer1M / 2 };
+    if (name && !COVID19_NAMES[code]) COVID19_NAMES[code] = name;
+  }
+  enforceNonDecreasingCovid19Vaccine();
+}
+
+/** Vaccine should not logically decrease (like measles coverage). Enforce running max by year. */
+function enforceNonDecreasingCovid19Vaccine() {
+  for (const code of Object.keys(COVID19_VACCINE)) {
+    const byYear = COVID19_VACCINE[code];
+    const years = Object.keys(byYear).sort(function (a, b) { return Number(a) - Number(b); });
+    let prev = 0;
+    for (let i = 0; i < years.length; i++) {
+      const y = years[i];
+      const v = byYear[y].dosesPer1M != null ? byYear[y].dosesPer1M : 0;
+      const next = Math.max(v, prev);
+      byYear[y].dosesPer1M = next;
+      prev = next;
+    }
+  }
+}
+
+function loadCovid19Data() {
+  const config = DISEASE_CONFIG.covid19;
+  if (!config || !config.casesCsvUrl || !config.vaccineCsvUrl) return Promise.resolve();
+  const loadPopulation = config.populationJsonUrl
+    ? fetch(config.populationJsonUrl).then(function (r) { return r.json(); }).then(function (obj) { COVID19_POPULATION = obj || {}; }).catch(function () { COVID19_POPULATION = {}; })
+    : Promise.resolve();
+  return loadPopulation.then(function () {
+    return Promise.all([
+      fetch(config.casesCsvUrl).then(function (r) { return r.text(); }),
+      fetch(config.vaccineCsvUrl).then(function (r) { return r.text(); })
+    ]);
+  }).then(function (texts) {
+    parseCovid19CasesCSV(texts[0]);
+    parseCovid19VaccineCSV(texts[1]);
+  }).catch(function (e) { console.warn('COVID-19 data not loaded:', e); });
+}
+
+/** Build year entries for COVID-19: cases + vaccine from CSV, funding/geo from EPIDEMIC_DATA or centroids. */
+function getCovid19YearData(yr) {
+  const allCc = new Set();
+  Object.keys(COVID19_CASES).forEach(function (cc) { if (COVID19_CASES[cc][yr] != null) allCc.add(cc); });
+  Object.keys(COVID19_VACCINE).forEach(function (cc) { if (COVID19_VACCINE[cc][yr]) allCc.add(cc); });
+  var maxDosesPer1M = 0;
+  allCc.forEach(function (cc) {
+    const vac = COVID19_VACCINE[cc] && COVID19_VACCINE[cc][yr];
+    if (vac && vac.dosesPer1M != null && vac.dosesPer1M > maxDosesPer1M) maxDosesPer1M = vac.dosesPer1M;
+  });
+  const centroids = getCountryCentroids();
+  const entries = [];
+  allCc.forEach(function (cc) {
+    const v = EPIDEMIC_DATA[cc];
+    const casesVal = COVID19_CASES[cc] && COVID19_CASES[cc][yr] != null ? COVID19_CASES[cc][yr] : 0;
+    const casesPer1M = COVID19_CASES_RAW[cc] && COVID19_CASES_RAW[cc][yr] != null ? COVID19_CASES_RAW[cc][yr] : null;
+    const vac = COVID19_VACCINE[cc] && COVID19_VACCINE[cc][yr] ? COVID19_VACCINE[cc][yr] : null;
+    const yd = v && v.years && v.years[yr] ? v.years[yr] : {};
+    const coords = (v && v.lat != null && v.lng != null) ? { lat: v.lat, lng: v.lng } : (centroids[cc] ? { lat: centroids[cc][0], lng: centroids[cc][1] } : null);
+    if (!coords) return;
+    const dosesPer1M = vac ? vac.dosesPer1M : null;
+    const vaccineCoverageForMap = (maxDosesPer1M > 0 && dosesPer1M != null) ? (dosesPer1M / maxDosesPer1M) * 100 : null;
+    entries.push({
+      cc: cc,
+      name: (v && v.name) || COVID19_NAMES[cc] || cc,
+      region: v && v.region,
+      income: v && v.income,
+      lat: coords.lat,
+      lng: coords.lng,
+      measles: casesVal,
+      cases_per_1M: casesPer1M,
+      vaccine_coverage: vaccineCoverageForMap,
+      doses: dosesPer1M,
+      target_number: null,
+      gghed_per_capita: yd.gghed_per_capita != null ? yd.gghed_per_capita : (v && v.avg_gghed),
+      pop_density: yd.pop_density != null ? yd.pop_density : null,
+      underfunded: v && v.underfunded_score,
+      avg_gghed: v && v.avg_gghed,
+      peak_measles: null,
+      peak_year: null,
+    });
+  });
+  var maxCases = 0;
+  var maxFunding = 0;
+  for (var i = 0; i < entries.length; i++) {
+    var c = entries[i].measles;
+    var f = entries[i].gghed_per_capita;
+    if (c != null && c > maxCases) maxCases = c;
+    if (f != null && f > maxFunding) maxFunding = f;
+  }
+  maxCases = Math.max(maxCases, 1);
+  maxFunding = Math.max(maxFunding, 1);
+  for (i = 0; i < entries.length; i++) {
+    var need = (entries[i].measles != null ? entries[i].measles : 0) / maxCases;
+    var fundLevel = (entries[i].gghed_per_capita != null ? entries[i].gghed_per_capita : 0) / maxFunding;
+    entries[i].funding_gap = need * (1 - Math.min(fundLevel, 1));
+  }
+  return entries;
+}
+if (typeof window !== 'undefined') { window.getCovid19YearData = getCovid19YearData; }
+
+/** Return a v-like object for the country panel when currentDisease is COVID-19. */
+function getCovid19CountryForPanel(cc) {
+  const casesByYear = COVID19_CASES[cc];
+  const vaccineByYear = COVID19_VACCINE[cc];
+  if (!casesByYear && !vaccineByYear) return null;
+  const v = EPIDEMIC_DATA[cc] || {};
+  const allYears = new Set();
+  if (casesByYear) Object.keys(casesByYear).forEach(function (y) { allYears.add(y); });
+  if (vaccineByYear) Object.keys(vaccineByYear).forEach(function (y) { allYears.add(y); });
+  const years = {};
+  let peak_measles = null;
+  let peak_year = null;
+  allYears.forEach(function (y) {
+    const yd = v.years && v.years[y] ? { ...v.years[y] } : {};
+    if (casesByYear && casesByYear[y] != null) yd.measles = casesByYear[y];
+    if (vaccineByYear && vaccineByYear[y]) {
+      yd.doses = vaccineByYear[y].dosesPer1M;
+      yd.vaccine_coverage = null;
+    }
+    years[y] = yd;
+    if (yd.measles != null && (peak_measles == null || yd.measles > peak_measles)) {
+      peak_measles = yd.measles;
+      peak_year = y;
+    }
+  });
+  return {
+    name: v.name || COVID19_NAMES[cc] || cc,
+    region: v.region,
+    income: v.income,
+    years: years,
+    peak_measles: peak_measles,
+    peak_year: peak_year,
+  };
+}
+if (typeof window !== 'undefined') { window.getCovid19CountryForPanel = getCovid19CountryForPanel; }

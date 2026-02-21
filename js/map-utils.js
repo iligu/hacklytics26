@@ -111,6 +111,9 @@ function scaleGreenWhiteRed(t) {
 
 function getYearData(year) {
   const yr = String(year);
+  if (currentDisease === 'covid19' && typeof window.getCovid19YearData === 'function') {
+    return window.getCovid19YearData(yr);
+  }
   const entries = [];
   for (const key of Object.keys(EPIDEMIC_DATA)) {
     const v = EPIDEMIC_DATA[key];
