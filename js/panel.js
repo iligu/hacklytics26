@@ -4,7 +4,11 @@
  */
 function showCountry(cc) {
   selectedCountry = cc;
-  const v = EPIDEMIC_DATA[cc];
+  let v;
+  if (currentDisease === 'covid19' && typeof window.getCovid19CountryForPanel === 'function') {
+    v = window.getCovid19CountryForPanel(cc);
+  }
+  if (!v) v = EPIDEMIC_DATA[cc];
   if (!v) return;
 
   const cfg = DISEASE_CONFIG[currentDisease] || DISEASE_CONFIG.measles;
@@ -44,7 +48,9 @@ function showCountry(cc) {
   const coverageNum = (coverage != null && !isNaN(coverage)) ? coverage : -1;
   const fundingStr = fmtMoney(funding);
   const fundingNum = (funding != null && funding > 0) ? funding : -1;
-  const dosesStr = fmtDoses(doses);
+  const dosesStr = (currentDisease === 'covid19' && doses != null && doses > 0)
+    ? doses.toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' per 1M'
+    : fmtDoses(doses);
   const popStr = fmtNum(popDen);
   const gapStr = fmtGap(fundingGap);
   const gapNum = (fundingGap != null && !isNaN(fundingGap)) ? fundingGap : 0;
@@ -54,17 +60,17 @@ function showCountry(cc) {
     '<div id="country-title">' + v.name + '</div>' +
     '<div id="country-meta">' + (v.region || '') + (v.region && v.income ? ' \u2022 ' : '') + (v.income ? v.income + ' income' : '') + '</div>' +
     '<div class="stat-grid">' +
-    '<div class="stat-card"><div class="stat-label">Cases (' + currentYear + ')</div><div class="stat-value ' + (cases > 0 ? 'red' : '') + '">' + casesStr + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Vaccine Coverage (' + antigenLabel + ')</div><div class="stat-value ' + (coverageNum < 0 ? '' : coverageNum < 50 ? 'red' : coverageNum < 80 ? 'yellow' : 'green') + '">' + coverageStr + '</div>' +
-    (coverageNum >= 0 && coverageNum < 95 ? '<div class="stat-gap">Target 95% \u2022 Gap ' + (95 - coverageNum).toFixed(1) + '%</div>' : '') + '</div>' +
+    '<div class="stat-card"><div class="stat-label">' + (currentDisease === 'covid19' ? 'Total cases (' + currentYear + ')' : 'Cases (' + currentYear + ')') + '</div><div class="stat-value ' + (cases > 0 ? 'red' : '') + '">' + casesStr + '</div></div>' +
+    (currentDisease === 'covid19'
+      ? '<div class="stat-card"><div class="stat-label">Doses (per 1M pop., ÷2)</div><div class="stat-value cyan">' + dosesStr + '</div></div>'
+      : '<div class="stat-card"><div class="stat-label">Vaccine Coverage (' + antigenLabel + ')</div><div class="stat-value ' + (coverageNum < 0 ? '' : coverageNum < 50 ? 'red' : coverageNum < 80 ? 'yellow' : 'green') + '">' + coverageStr + '</div>' + (coverageNum >= 0 && coverageNum < 95 ? '<div class="stat-gap">Target 95% \u2022 Gap ' + (95 - coverageNum).toFixed(1) + '%</div>' : '') + '</div><div class="stat-card"><div class="stat-label">Doses Administered</div><div class="stat-value cyan">' + dosesStr + '</div></div>') +
     '<div class="stat-card"><div class="stat-label">Gov. Funding/cap</div><div class="stat-value ' + (fundingNum < 0 ? '' : fundingNum < 50 ? 'red' : fundingNum < 200 ? 'yellow' : 'green') + '">' + fundingStr + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Doses Administered</div><div class="stat-value cyan">' + dosesStr + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Pop. Density</div><div class="stat-value cyan">' + popStr + '</div></div>' +
-    '<div class="stat-card"><div class="stat-label">Funding gap (measles vs funding)</div><div class="stat-value ' + (gapNum > 0.3 ? 'red' : gapNum > 0.1 ? 'yellow' : '') + '">' + gapStr + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Funding gap (burden vs funding)</div><div class="stat-value ' + (gapNum > 0.3 ? 'red' : gapNum > 0.1 ? 'yellow' : '') + '">' + gapStr + '</div></div>' +
     '</div>' +
     '<div class="mini-chart-label">' + diseaseLabel + ' Cases Over Time</div>' +
     '<canvas id="mini-chart-canvas" height="70"></canvas>' +
-    '<div class="mini-chart-label">Vaccine Coverage (' + antigenLabel + ') Over Time</div>' +
+    '<div class="mini-chart-label">Vaccine ' + (currentDisease === 'covid19' ? 'doses (per 1M pop., ÷2) (' + antigenLabel + ')' : 'Coverage (' + antigenLabel + ')') + ' Over Time</div>' +
     '<canvas id="vaccine-chart-canvas" height="70"></canvas>' +
     '<div class="sir-info">' +
     '<div class="sir-title">// SIR Model Estimates</div>' +
@@ -257,30 +263,36 @@ function drawModalVaccineChart(yearsData, years) {
   var H = 160;
   canvas.width = W;
   canvas.height = H;
+  var isCovid = currentDisease === 'covid19';
   var vals = years.map(function (y) {
-    var c = yearsData[y] && yearsData[y].vaccine_coverage;
+    var yd = yearsData[y];
+    if (!yd) return null;
+    if (isCovid) return yd.doses != null && !isNaN(yd.doses) ? yd.doses : null;
+    var c = yd.vaccine_coverage;
     return c != null && !isNaN(c) ? c : null;
   });
   var numVals = vals.filter(function (v) { return v != null; });
-  var maxV = Math.max.apply(null, numVals.concat([95, 1]));
+  var maxV = Math.max.apply(null, numVals.concat([isCovid ? 0 : 95, 1]));
   var minV = numVals.length ? Math.min.apply(null, numVals) : 0;
 
   ctx.fillStyle = '#faf6ed';
   ctx.fillRect(0, 0, W, H);
-  var targetPct = 95;
-  var targetY = H - ((targetPct - minV) / (maxV - minV || 1)) * (H - 12);
-  ctx.strokeStyle = 'rgba(58,107,58,0.5)';
-  ctx.setLineDash([4, 4]);
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(40, targetY);
-  ctx.lineTo(W, targetY);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = '#3a6b3a';
-  ctx.font = '9px DM Mono, monospace';
-  ctx.textAlign = 'right';
-  ctx.fillText('95% target', W - 4, targetY - 4);
+  if (!isCovid) {
+    var targetPct = 95;
+    var targetY = H - ((targetPct - minV) / (maxV - minV || 1)) * (H - 12);
+    ctx.strokeStyle = 'rgba(58,107,58,0.5)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(40, targetY);
+    ctx.lineTo(W, targetY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#3a6b3a';
+    ctx.font = '9px DM Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('95% target', W - 4, targetY - 4);
+  }
   ctx.lineWidth = 1.5;
   ctx.lineJoin = 'round';
   ctx.beginPath();
@@ -305,14 +317,22 @@ function drawModalVaccineChart(yearsData, years) {
 function renderModalTable(yearsData, years) {
   var tbody = document.getElementById('chart-modal-rows');
   if (!tbody) return;
+  var isCovid = currentDisease === 'covid19';
+  var headerRow = tbody.closest('table') && tbody.closest('table').querySelector('thead tr');
+  if (headerRow && headerRow.cells.length >= 3) {
+    headerRow.cells[2].textContent = isCovid ? 'Doses (per 1M pop., ÷2)' : 'Coverage';
+  }
   var html = '';
   for (var i = 0; i < years.length; i++) {
     var y = years[i];
     var row = yearsData[y] || {};
     var cases = (row.measles != null && row.measles > 0) ? row.measles.toLocaleString() : 'No data available';
-    var cov = (row.vaccine_coverage != null && !isNaN(row.vaccine_coverage))
-      ? row.vaccine_coverage.toFixed(1) + '%'
-      : 'No data available';
+    var cov;
+    if (isCovid) {
+      cov = (row.doses != null && !isNaN(row.doses)) ? row.doses.toLocaleString(undefined, { maximumFractionDigits: 0 }) : 'No data available';
+    } else {
+      cov = (row.vaccine_coverage != null && !isNaN(row.vaccine_coverage)) ? row.vaccine_coverage.toFixed(1) + '%' : 'No data available';
+    }
     html += '<tr><td>' + y + '</td><td>' + cases + '</td><td>' + cov + '</td></tr>';
   }
   tbody.innerHTML = html;
@@ -326,30 +346,36 @@ function drawVaccineSparkline(yearsData, years) {
   const H = 70;
   canvas.width = W;
   canvas.height = H;
+  const isCovid = currentDisease === 'covid19';
   const vals = years.map(function (y) {
-    const c = yearsData[y] && yearsData[y].vaccine_coverage;
+    const yd = yearsData[y];
+    if (!yd) return null;
+    if (isCovid) return yd.doses != null && !isNaN(yd.doses) ? yd.doses : null;
+    const c = yd.vaccine_coverage;
     return c != null && !isNaN(c) ? c : null;
   });
   const numVals = vals.filter(function (v) { return v != null; });
-  const maxV = Math.max.apply(null, numVals.concat([95, 1]));
+  const maxV = Math.max.apply(null, numVals.concat([isCovid ? 0 : 95, 1]));
   const minV = numVals.length ? Math.min.apply(null, numVals) : 0;
 
   ctx.fillStyle = '#faf6ed';
   ctx.fillRect(0, 0, W, H);
-  const targetPct = 95;
-  const targetY = H - ((targetPct - minV) / (maxV - minV || 1)) * (H - 8);
-  ctx.strokeStyle = 'rgba(58,107,58,0.5)';
-  ctx.setLineDash([4, 4]);
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(0, targetY);
-  ctx.lineTo(W, targetY);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = '#3a6b3a';
-  ctx.font = '8px DM Mono, monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('95% target', 4, targetY - 2);
+  if (!isCovid) {
+    const targetPct = 95;
+    const targetY = H - ((targetPct - minV) / (maxV - minV || 1)) * (H - 8);
+    ctx.strokeStyle = 'rgba(58,107,58,0.5)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, targetY);
+    ctx.lineTo(W, targetY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#3a6b3a';
+    ctx.font = '8px DM Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('95% target', 4, targetY - 2);
+  }
 
   ctx.lineWidth = 1.5;
   ctx.lineJoin = 'round';
@@ -369,7 +395,7 @@ function drawVaccineSparkline(yearsData, years) {
   if (curIdx >= 0 && vals[curIdx] != null) {
     const cx = (curIdx / (years.length - 1 || 1)) * W;
     const cy = H - ((vals[curIdx] - minV) / (maxV - minV || 1)) * (H - 8);
-    ctx.fillStyle = coverageColor(vals[curIdx]);
+    ctx.fillStyle = isCovid ? '#3a6b3a' : coverageColor(vals[curIdx]);
     ctx.beginPath();
     ctx.arc(cx, cy, 4, 0, Math.PI * 2);
     ctx.fill();

@@ -40,11 +40,11 @@ const DISEASE_CONFIG = {
   covid19: {
     label: 'COVID-19',
     R0: 2.5,
-    vaccineJsonUrl: 'Measles%20vaccination%20coverage%202026-17-02%2011-10%20UTC.json',
-    vaccineCsvUrl: 'Measles%20vaccination%20coverage%202026-17-02%2011-10%20UTC.csv',
-    antigen: 'MCV2',
-    coverageCategory: 'ADMIN',
+    casesCsvUrl: 'covid19_total_cases_by_year.csv',
+    vaccineCsvUrl: 'covid19_vaccine_doses_by_year.csv',
+    populationJsonUrl: 'js/covid19_population_2020.json',  // 2020 population for per-1M → total conversion
     antigenLabel: 'COVID-19',
+    casesLabel: 'Total cases',
   },
   mpox: {
     label: 'MPox',
@@ -83,3 +83,7 @@ const R0_BASE = Object.fromEntries(
 /** Year range for the slider */
 const YEAR_MIN = 2000;
 const YEAR_MAX = 2023;
+
+/** COVID-19: data from 2020 onwards */
+const COVID19_YEAR_MIN = 2020;
+const COVID19_YEAR_MAX = 2023;
