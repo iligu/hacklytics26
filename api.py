@@ -1,10 +1,13 @@
 import sys
 import os
+import json
 from pathlib import Path
 from dotenv import load_dotenv
 
 # Add docs to path so we can import vectordb_setup
 sys.path.append(str(Path(__file__).parent / "docs"))
+import psycopg2
+import psycopg2.extras
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from vectordb_setup import (
@@ -253,8 +256,6 @@ def next_victims():
 
 
 # ── POST /api/chat ────────────────────────────────────────────
-from flask import request
-
 @app.route("/api/chat", methods=["POST"])
 def chat():
     """RAG Chat endpoint"""

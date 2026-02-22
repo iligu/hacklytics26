@@ -1,5 +1,5 @@
 /**
- * EpiWatch — RAG Chat Component
+ * Pathologic — RAG Chat Component
  * Handles communication with the /api/chat backend.
  */
 
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             loadingDiv.remove();
-            appendMessage('bot', 'Error connecting to server. Please ensure api.py is running on port 5001.');
+            appendMessage('bot', 'Cannot reach the chat API. In a separate terminal run: python3 api.py (from the project folder). See README for optional RAG setup.');
             console.error('Chat error:', error);
         } finally {
             chatSend.disabled = false;

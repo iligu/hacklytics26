@@ -26,6 +26,24 @@ You should see something like: `Serving HTTP on 0.0.0.0 port 8000 ...`
 
 Vaccine JSON/CSV files in the project folder (e.g. `Measles vaccination coverage 2026-17-02 11-10 UTC.json`) will load correctly when the page is served this way.
 
+## Chat with Data Expert (optional)
+
+The **Chat with Data Expert** widget in the dashboard calls a separate API. To use it:
+
+**1. In a second terminal**, from the project folder, start the chat API:
+```bash
+cd /path/to/hacklytics26
+python3 api.py
+```
+You should see: `* Running on http://127.0.0.1:5001` (and a note if RAG is enabled).
+
+**2. (Optional) For RAG answers** from your docs, set a Gemini API key and build the index once:
+- Create a `.env` file in the project root with: `GEMINI_API_KEY=your_key`
+- Run once to build the index: `python3 rag_chatbot.py` (then exit); this creates `index_storage/`
+- Then run `python3 api.py` as above.
+
+**3. Keep the API running** while you use the chat. If you see “Error connecting to server”, the API is not running or not reachable on port 5001.
+
 ## Project structure
 
 | Path | Purpose |
