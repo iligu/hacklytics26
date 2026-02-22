@@ -1,4 +1,4 @@
-# EpiWatch — Data sources and methodology
+# Pathologic — Data sources and methodology
 
 This document describes where the data comes from and how key numbers (including R₀ and SIR estimates) are computed, so you can verify accuracy and understand limitations.
 
@@ -8,7 +8,7 @@ This document describes where the data comes from and how key numbers (including
 
 | Data | Source | Notes |
 |------|--------|--------|
-| **Measles cases, population density, health spending** | `data/combined_ghed_measles_popdensity.csv` (and embedded in `js/epidemic-data.js`) | Combines WHO/other epidemiological and spending data; cases = reported measles cases; `gghed_per_capita` = government health expenditure per capita (USD). |
+| **Measles cases, population density, health spending** | `data/combined_ghed_measles_popdensity.csv` (and embedded in `js/epidemic-data.js`) | Combines WHO/other epidemiological and spending data; cases = reported measles cases; `gghed_per_capita` = funding per capita (USD). |
 | **Vaccine coverage (MCV2), doses, target numbers** | WHO/UNICEF-style data: `Measles vaccination coverage 2026-17-02 11-10 UTC.csv` (and/or `.json`) | Same structure as WHO/UNICEF Estimates of National Immunization Coverage (WUENIC). ADMIN = administrative coverage. |
 | **Country boundaries / map** | `js/world-geo.js` | GeoJSON for choropleth (Funding gap mode). |
 

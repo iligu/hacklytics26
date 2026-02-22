@@ -1,5 +1,5 @@
 /**
- * EpiWatch — Controls and bootstrap
+ * Pathologic — Controls and bootstrap
  * Depends: all other modules; runs after DOM and scripts are ready.
  */
 (function () {

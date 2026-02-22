@@ -1,5 +1,5 @@
 /**
- * EpiWatch — Vaccine coverage data loader (JSON/CSV)
+ * Pathologic — Vaccine coverage data loader (JSON/CSV)
  * Merges into EPIDEMIC_DATA and adds vaccine-only countries using WORLD_GEOJSON centroids.
  * Depends: EPIDEMIC_DATA, WORLD_GEOJSON, DISEASE_CONFIG
  */

@@ -5,7 +5,7 @@ Uses real GHED + measles + population density data.
 
 Vector captures GROWTH PATTERNS of:
   - Virus (measles) case growth rate
-  - Government health funding trend
+  - Funding trend
   - External donor funding decay
   - Out-of-pocket burden rise
   - Population density
@@ -59,14 +59,14 @@ def compute_country_vector(group):
     measles_growth = (measles_recent - measles_early) / (measles_early + 1)
     measles_growth = max(0, min(measles_growth, 1.0))
 
-    # ── Government health funding TREND ───────────────────────
+    # ── Funding TREND ───────────────────────────────────────────
     # Positive = gov spending falling = double abandonment
     gov_early  = early["gghed_per_capita_usd"].mean()
     gov_recent = recent["gghed_per_capita_usd"].mean()
     gov_decay  = (gov_early - gov_recent) / (gov_early + 1)
     gov_decay  = max(0, min(gov_decay, 1.0))
 
-    # ── Government health spending LEVEL ─────────────────────
+    # ── Funding LEVEL ──────────────────────────────────────────
     gov_spend_norm = min(gov_recent / 200, 1.0)
 
     # ── Population density ────────────────────────────────────
@@ -149,7 +149,7 @@ VECTOR_KEYS = [
     "oop_rise",         # population burden rising
     "measles_burden",   # current disease level
     "measles_growth",   # disease getting worse
-    "gov_decay",        # government also retreating
+    "gov_decay",        # funding also retreating
     "pop_density_norm", # delivery difficulty
 ]
 
@@ -204,7 +204,7 @@ def _explain_similarity(a, b):
     if abs(a["measles_growth"] - b["measles_growth"]) < 0.1:
         reasons.append("similar disease growth rate")
     if abs(a["gov_decay"] - b["gov_decay"]) < 0.1:
-        reasons.append("government also cutting health spending")
+        reasons.append("funding also cutting health spending")
     if abs(a["ext_decay"] - b["ext_decay"]) < 0.1:
         reasons.append("donors withdrawing at the same pace")
     if abs(a["pop_density_norm"] - b["pop_density_norm"]) < 0.15:

@@ -1,4 +1,4 @@
-# EpiWatch — Global Disease Surveillance
+# Pathologic — Global Disease Surveillance
 
 Geospatial dashboard for epidemic data, funding gaps, and vaccine coverage. Built for hackathon use; modular so you can add more diseases easily.
 
@@ -78,7 +78,7 @@ Vaccine JSON/CSV files in the project folder (e.g. `Measles vaccination coverage
 ## Map modes
 
 - **Spread Circles**: Case-based circles (and R0-style radius).
-- **Funding Gap**: Choropleth or circles by gov. health funding per capita.
+- **Funding Gap**: Choropleth or circles by funding per capita.
 - **Vaccine Coverage**: Circles colored by coverage % (red = gap, green = on target); 95% target line in the panel.
 
 Legend and country panel labels (e.g. “Measles case load”, “Vaccine Coverage (MCV2)”) use `DISEASE_CONFIG[currentDisease]` so they stay correct when you add diseases.

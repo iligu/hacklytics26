@@ -1,5 +1,5 @@
 /**
- * EpiWatch — Disease configuration
+ * Pathologic — Disease configuration
  *
  * R0: Reference basic reproduction number from literature (measles typically 12–18; we use 15).
  *     Used for SIR model (β, γ, peak fraction). See DATA_AND_METHODOLOGY.md.
