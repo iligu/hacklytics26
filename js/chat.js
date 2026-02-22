@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatSend.disabled = true;
 
         try {
-            const response = await fetch('http://localhost:5001/api/chat', {
+            const response = await fetch('http://localhost:3002/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: text })
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             loadingDiv.remove();
-            appendMessage('bot', 'Error connecting to server. Please ensure api.py is running on port 5001.');
+            appendMessage('bot', 'Error connecting to server. Please ensure api.py is running on port 3002.');
             console.error('Chat error:', error);
         } finally {
             chatSend.disabled = false;

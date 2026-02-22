@@ -1,326 +1,326 @@
-import sys
-import os
-from pathlib import Path
-from dotenv import load_dotenv
+"""
+Crisis Fatigue Detector — Actian VectorAI DB
+=============================================
+Uses real GHED + measles + population density data.
 
-# Add docs to path so we can import vectordb_setup
-sys.path.append(str(Path(__file__).parent / "docs"))
-from flask import Flask, jsonify, request
+Vector captures GROWTH PATTERNS of:
+  - Virus (measles) case growth rate
+  - Government health funding trend
+  - External donor funding decay
+  - Out-of-pocket burden rise
+  - Population density
+  - External dependency
+
+Countries with the same vector = same trajectory of being forgotten.
+
+Run with:  python3 api.py
+"""
+
+import os
+import pandas as pd
+import numpy as np
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-from vectordb_setup import (
-    CRISIS_HISTORY,
-    compute_fatigue_vector,
-    compute_fatigue_score,
-    predict_next_forgotten,
-    DB_CONFIG,
-)
-from llama_index.core import (
-    StorageContext, load_index_from_storage, Settings
-)
-from llama_index.llms.google_genai import GoogleGenAI
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.core.memory import ChatMemoryBuffer
-from dotenv import load_dotenv
-import os
 
-load_dotenv()
+# ── Load real data ────────────────────────────────────────────
+df = pd.read_csv("data/combined_ghed_measles_popdensity.csv")
 
+TARGET_INCOME = ["Low", "Lower-middle"]
+df = df[df["income"].isin(TARGET_INCOME)].copy()
+df = df.fillna(0)
+
+# ── Build per-country summary ─────────────────────────────────
+def compute_country_vector(group):
+    group = group.sort_values("year")
+
+    mid    = len(group) // 2
+    early  = group.iloc[:mid]
+    recent = group.iloc[mid:]
+
+    # External donor funding DECAY (positive = donors pulling out)
+    ext_early  = early["external_per_capita_usd"].mean()
+    ext_recent = recent["external_per_capita_usd"].mean()
+    ext_decay  = (ext_early - ext_recent) / (ext_early + 1)
+    ext_decay  = max(0, min(ext_decay, 1.0))
+
+    # Out-of-pocket burden RISE (positive = population paying more)
+    oop_early  = early["oop_per_capita_usd"].mean()
+    oop_recent = recent["oop_per_capita_usd"].mean()
+    oop_rise   = (oop_recent - oop_early) / (oop_early + 1)
+    oop_rise   = max(0, min(oop_rise, 1.0))
+
+    # Measles CURRENT BURDEN
+    measles_recent = recent["measles_cases_reported"].mean()
+    measles_burden = min(measles_recent / 50000, 1.0)
+
+    # Measles GROWTH RATE (positive = disease worsening while funding drops)
+    measles_early  = early["measles_cases_reported"].mean()
+    measles_growth = (measles_recent - measles_early) / (measles_early + 1)
+    measles_growth = max(0, min(measles_growth, 1.0))
+
+    # Government health funding TREND (positive = gov spending falling)
+    gov_early  = early["gghed_per_capita_usd"].mean()
+    gov_recent = recent["gghed_per_capita_usd"].mean()
+    gov_decay  = (gov_early - gov_recent) / (gov_early + 1)
+    gov_decay  = max(0, min(gov_decay, 1.0))
+
+    # Government health spending LEVEL
+    gov_spend_norm = min(gov_recent / 200, 1.0)
+
+    # Population density
+    pop_density_norm = min(group["pop_density"].mean() / 500, 1.0)
+
+    # External dependency ratio
+    che_recent = recent["che_per_capita_usd"].mean()
+    ext_dep    = ext_recent / (che_recent + 1)
+    ext_dep    = min(ext_dep, 1.0)
+
+    # Fatigue Score
+    fatigue = round(
+        0.30 * ext_decay       +
+        0.20 * oop_rise        +
+        0.15 * measles_burden  +
+        0.15 * measles_growth  +
+        0.10 * gov_decay       +
+        0.10 * (1 - gov_spend_norm),
+        4
+    )
+
+    return {
+        "ext_decay":               round(float(ext_decay), 4),
+        "oop_rise":                round(float(oop_rise), 4),
+        "measles_burden":          round(float(measles_burden), 4),
+        "measles_growth":          round(float(measles_growth), 4),
+        "gov_decay":               round(float(gov_decay), 4),
+        "pop_density_norm":        round(float(pop_density_norm), 4),
+        "fatigue_score":           fatigue,
+        "ext_dependency":          round(float(ext_dep), 4),
+        "gov_spend_norm":          round(float(gov_spend_norm), 4),
+        "ext_per_capita_recent":   round(float(ext_recent), 2),
+        "oop_per_capita_recent":   round(float(oop_recent), 2),
+        "che_per_capita_recent":   round(float(che_recent), 2),
+        "gov_per_capita_recent":   round(float(gov_recent), 2),
+        "measles_recent":          round(float(measles_recent), 0),
+        "measles_early":           round(float(measles_early), 0),
+        "years_data":              len(group),
+        "latest_year":             int(group["year"].max()),
+    }
+
+
+# ── Process all countries ─────────────────────────────────────
+print("📊 Processing real data...")
+summaries = []
+
+for (country, code, region, income), group in df.groupby(
+        ["country_name", "country_code", "region", "income"]):
+    if len(group) < 4:
+        continue
+    stats = compute_country_vector(group)
+    summaries.append({
+        "iso":    code,
+        "name":   country,
+        "region": region,
+        "income": income,
+        **stats
+    })
+
+summaries = sorted(summaries, key=lambda x: x["fatigue_score"], reverse=True)
+print(f"✅ Processed {len(summaries)} countries")
+
+for s in summaries:
+    if   s["fatigue_score"] > 0.5:  s["risk"] = "CRITICAL"
+    elif s["fatigue_score"] > 0.35: s["risk"] = "HIGH"
+    elif s["fatigue_score"] > 0.2:  s["risk"] = "MODERATE"
+    else:                            s["risk"] = "STABLE"
+
+print("\n🔥 Top 10 Most Forgotten Crises:")
+for s in summaries[:10]:
+    print(f"  {s['name']:30s}  fatigue={s['fatigue_score']:.3f}  "
+          f"measles_growth={s['measles_growth']:.2f}  "
+          f"gov_decay={s['gov_decay']:.2f}  "
+          f"ext_decay={s['ext_decay']:.2f}")
+
+
+# ── Try to connect to Actian VectorAI (optional) ─────────────
+VECTOR_KEYS = [
+    "ext_decay",
+    "oop_rise",
+    "measles_burden",
+    "measles_growth",
+    "gov_decay",
+    "pop_density_norm",
+]
+
+def to_vector(s):
+    return [s[k] for k in VECTOR_KEYS]
+
+try:
+    from cortex import CortexClient, DistanceMetric
+    with CortexClient("localhost:50052") as client:
+        client.recreate_collection(
+            "crisis_fatigue",
+            dimension=6,
+            distance_metric=DistanceMetric.COSINE
+        )
+        client.batch_upsert(
+            "crisis_fatigue",
+            ids=list(range(len(summaries))),
+            vectors=[to_vector(s) for s in summaries],
+            payloads=summaries
+        )
+        print(f"\n✅ Inserted {len(summaries)} country vectors into Actian VectorAI")
+
+        # Quick similarity check: Afghanistan's crisis twins
+        af_idx = next((i for i, s in enumerate(summaries) if s["iso"] == "AFG"), 0)
+        af_vec = to_vector(summaries[af_idx])
+        results = client.search("crisis_fatigue", query=af_vec, top_k=5)
+        print("\n🔍 Countries with same growth pattern as Afghanistan:")
+        for r in results:
+            match = summaries[r.id]
+            if match["iso"] != "AFG":
+                print(f"  {match['name']:25s}  fatigue={match['fatigue_score']:.3f}  "
+                      f"similarity={r.score:.3f}")
+
+    ACTIAN_AVAILABLE = True
+
+except Exception as e:
+    print(f"\n⚠️  Actian VectorAI not available ({e}) — running without vector similarity")
+    ACTIAN_AVAILABLE = False
+
+
+# ── Helper: explain why two countries are similar ─────────────
+def _explain_similarity(a, b):
+    reasons = []
+    if abs(a["measles_growth"] - b["measles_growth"]) < 0.1:
+        reasons.append("similar disease growth rate")
+    if abs(a["gov_decay"] - b["gov_decay"]) < 0.1:
+        reasons.append("government also cutting health spending")
+    if abs(a["ext_decay"] - b["ext_decay"]) < 0.1:
+        reasons.append("donors withdrawing at the same pace")
+    if abs(a["pop_density_norm"] - b["pop_density_norm"]) < 0.15:
+        reasons.append("similar population density challenges")
+    return reasons if reasons else ["overall fatigue trajectory matches"]
+
+
+# ── Flask API ─────────────────────────────────────────────────
 app = Flask(__name__)
-CORS(app)  # allow frontend on port 5500 to call this API
+CORS(app)
 
-# ── RAG System Initialization ────────────────────────────────
-CHAT_ENGINE = None
-
-def init_rag():
-    global CHAT_ENGINE
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        print("⚠️ GEMINI_API_KEY not found. RAG Chat will be disabled.")
-        return
-
-    try:
-        # Use same settings as rag_chatbot.py
-        Settings.llm = GoogleGenAI(api_key=api_key, model="gemini-2.0-flash")
-        Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
-        
-        index_dir = "./index_storage"
-        if os.path.exists(index_dir):
-            storage_context = StorageContext.from_defaults(persist_dir=index_dir)
-            index = load_index_from_storage(storage_context)
-            memory = ChatMemoryBuffer.from_defaults(token_limit=3000)
-            CHAT_ENGINE = index.as_chat_engine(
-                chat_mode="context",
-                memory=memory
-            )
-            print("✅ RAG System initialized for API")
-        else:
-            print("⚠️ index_storage not found. Run rag_chatbot.py first to build index.")
-    except Exception as e:
-        print(f"❌ Failed to init RAG: {e}")
-
-init_rag()
-
-
-def get_conn():
-    return psycopg2.connect(**DB_CONFIG)
-
-
-def row_to_dict(row, cursor):
-    cols = [d[0] for d in cursor.description]
-    return dict(zip(cols, row))
-
-
-# ── GET /api/fatigue/all ──────────────────────────────────────
-@app.route("/api/fatigue/all")
-def all_crises():
-    """Return all crises with fatigue scores and yearly trend data."""
-    conn = get_conn()
-    cur  = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute("""
-        SELECT iso_code, country_name, region, crisis_type,
-               start_year, crisis_age, lat, lng,
-               fatigue_score, latest_funding_pct, latest_need_score,
-               prediction, yearly_data
-        FROM crisis_fatigue
-        ORDER BY fatigue_score DESC
-    """)
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    result = []
-    for r in rows:
-        entry = dict(r)
-        # Build time-series arrays for frontend charts
-        yearly = entry["yearly_data"]
-        years  = sorted(int(y) for y in yearly.keys())
-        entry["years"]       = years
-        entry["funding_trend"] = [yearly[str(y)][0] for y in years]
-        entry["need_trend"]    = [yearly[str(y)][1] for y in years]
-        entry["media_trend"]   = [yearly[str(y)][2] for y in years]
-        result.append(entry)
-
-    return jsonify(result)
-
-
-# ── GET /api/fatigue/similar/<iso> ────────────────────────────
-@app.route("/api/fatigue/similar/<iso>")
-def similar_crises(iso):
-    """
-    Vector similarity search: find crises with same fatigue pattern.
-    Uses cosine similarity on the 12-dim embedding.
-    """
-    # Get the query crisis
-    crisis = next((c for c in CRISIS_HISTORY if c["iso"] == iso.upper()), None)
-    if not crisis:
-        return jsonify({"error": f"Crisis {iso} not found"}), 404
-
-    query_vec = compute_fatigue_vector(crisis)
-
-    conn = get_conn()
-    cur  = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
-    cur.execute("""
-        SELECT iso_code, country_name, region, crisis_type,
-               start_year, crisis_age, fatigue_score,
-               latest_funding_pct, latest_need_score, prediction,
-               1 - (embedding <=> %s::vector) AS similarity
-        FROM crisis_fatigue
-        WHERE iso_code != %s
-        ORDER BY embedding <=> %s::vector
-        LIMIT 4
-    """, (str(query_vec), iso.upper(), str(query_vec)))
-
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    results = []
-    for r in rows:
-        entry = dict(r)
-        entry["similarity_pct"] = round(float(entry["similarity"]) * 100, 1)
-        entry["insight"] = _generate_insight(entry, crisis)
-        results.append(entry)
-
-    return jsonify({
-        "source": {
-            "iso": crisis["iso"],
-            "name": crisis["name"],
-            "fatigue_score": compute_fatigue_score(crisis),
-        },
-        "similar": results,
-    })
-
-
-# ── GET /api/fatigue/predict/<iso> ────────────────────────────
-@app.route("/api/fatigue/predict/<iso>")
-def predict_crisis(iso):
-    """Return funding decay prediction for 2025–2026."""
-    crisis = next((c for c in CRISIS_HISTORY if c["iso"] == iso.upper()), None)
-    if not crisis:
-        return jsonify({"error": f"Crisis {iso} not found"}), 404
-
-    prediction  = predict_next_forgotten(crisis)
-    fatigue     = compute_fatigue_score(crisis)
-    years       = sorted(crisis["yearly"].keys())
-    latest      = crisis["yearly"][years[-1]]
-
-    # Extend projection to 2027
-    decay = prediction["annual_decay_pct"]
-    pred_2027 = max(5, prediction["2026_funding_pct"] + decay)
-
-    return jsonify({
-        "iso": crisis["iso"],
-        "name": crisis["name"],
-        "fatigue_score": fatigue,
-        "current_funding_pct": latest[0],
-        "current_need_score": latest[1],
-        "crisis_age_years": 2024 - crisis["start_year"],
-        "prediction": {
-            **prediction,
-            "2027_funding_pct": round(pred_2027, 1),
-        },
-        "alert": _alert_level(prediction["2026_funding_pct"]),
-        "message": _prediction_message(crisis, prediction, fatigue),
-        "yearly_data": crisis["yearly"],
-    })
-
-
-# ── GET /api/fatigue/ranking ──────────────────────────────────
-@app.route("/api/fatigue/ranking")
-def fatigue_ranking():
-    """Return crises ranked by fatigue score — most forgotten first."""
-    conn = get_conn()
-    cur  = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute("""
-        SELECT iso_code, country_name, region, crisis_type,
-               start_year, crisis_age, fatigue_score,
-               latest_funding_pct, latest_need_score, prediction,
-               lat, lng
-        FROM crisis_fatigue
-        ORDER BY fatigue_score DESC
-    """)
-    rows = [dict(r) for r in cur.fetchall()]
-    cur.close()
-    conn.close()
-
-    # Add rank and labels
-    for i, r in enumerate(rows):
-        r["rank"] = i + 1
-        r["status"] = _fatigue_label(r["fatigue_score"])
-
-    return jsonify(rows)
-
-
-# ── GET /api/fatigue/next-victims ─────────────────────────────
-@app.route("/api/fatigue/next-victims")
-def next_victims():
-    """
-    Crises predicted to become critically underfunded (<25%) by 2026.
-    These are the 'next to be forgotten' — the core finding of our model.
-    """
-    conn = get_conn()
-    cur  = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute("""
-        SELECT iso_code, country_name, region, crisis_type,
-               start_year, crisis_age, fatigue_score,
-               latest_funding_pct, latest_need_score,
-               prediction, lat, lng
-        FROM crisis_fatigue
-        WHERE (prediction->>'will_hit_critical')::boolean = true
-           OR (prediction->>'2026_funding_pct')::float < 30
-        ORDER BY (prediction->>'2026_funding_pct')::float ASC
-    """)
-    rows = [dict(r) for r in cur.fetchall()]
-    cur.close()
-    conn.close()
-
-    # Enrich with similarity — find what past crisis each resembles
-    enriched = []
-    for r in rows:
-        similar_resp = app.test_client().get(f"/api/fatigue/similar/{r['iso_code']}")
-        similar_data = json.loads(similar_resp.data)
-        top_similar  = similar_data.get("similar", [{}])[0]
-        r["resembles"] = top_similar.get("country_name", "Unknown")
-        r["resembles_similarity"] = top_similar.get("similarity_pct", 0)
-        enriched.append(r)
-
-    return jsonify({
-        "total": len(enriched),
-        "headline": f"{len(enriched)} crises projected to become critically underfunded by 2026",
-        "crises": enriched,
-    })
-
-
-# ── POST /api/chat ────────────────────────────────────────────
-from flask import request
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    """RAG Chat endpoint"""
-    if not CHAT_ENGINE:
-        return jsonify({"response": "RAG system not initialized. Please check server logs."}), 503
-    
-    data = request.json
-    user_msg = data.get("message")
-    if not user_msg:
-        return jsonify({"error": "No message provided"}), 400
-    
     try:
-        response = CHAT_ENGINE.chat(user_msg)
-        return jsonify({
-            "response": str(response),
-            "sources": [] # Could extend to show source docs later
-        })
+        import google.generativeai as genai
+    except ImportError:
+        return jsonify({"response": "google-generativeai package not installed. Run: pip3 install google-generativeai"}), 500
+
+    data    = request.json or {}
+    message = data.get("message", "")
+
+    crisis_context = ""
+    try:
+        crisis_context  = f"Most forgotten: {summaries[0]['name']}. "
+        crisis_context += f"Critical crises: {len([s for s in summaries if s['risk'] == 'CRITICAL'])}.\n"
+        crisis_context += "Top at-risk countries:\n"
+        for s in summaries[:5]:
+            crisis_context += f"  {s['name']}: fatigue={s['fatigue_score']}, risk={s['risk']}\n"
+    except Exception:
+        pass
+
+    try:
+        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+        model     = genai.GenerativeModel("gemini-2.0-flash")
+        augmented = f"{message}\n\nLive crisis data:\n{crisis_context}" if crisis_context else message
+        response  = model.generate_content(augmented)
+        return jsonify({"response": response.text})
+    except Exception as e:
+        return jsonify({"response": f"AI error: {e}"}), 500
+
+
+@app.route("/api/fatigue/all")
+def all_fatigue():
+    return jsonify(summaries)
+
+
+@app.route("/api/fatigue/most-at-risk")
+def most_at_risk():
+    return jsonify([s for s in summaries if s["risk"] in ("CRITICAL", "HIGH")][:20])
+
+
+@app.route("/api/fatigue/forgotten-twins/<iso>")
+def forgotten_twins(iso):
+    crisis = next((s for s in summaries if s["iso"] == iso.upper()), None)
+    if not crisis:
+        return jsonify([])
+
+    if not ACTIAN_AVAILABLE:
+        # Fallback: sort by Euclidean distance on VECTOR_KEYS
+        def dist(a, b):
+            return sum((a[k] - b[k]) ** 2 for k in VECTOR_KEYS) ** 0.5
+        sorted_by_dist = sorted(
+            [s for s in summaries if s["iso"] != iso.upper()],
+            key=lambda s: dist(crisis, s)
+        )
+        twins = []
+        for match in sorted_by_dist[:3]:
+            twins.append({
+                **match,
+                "similarity": round((1 - dist(crisis, match)) * 100, 1),
+                "why_similar": _explain_similarity(crisis, match)
+            })
+        return jsonify(twins)
+
+    vec = to_vector(crisis)
+    try:
+        from cortex import CortexClient
+        with CortexClient("localhost:50052") as client:
+            results = client.search("crisis_fatigue", query=vec, top_k=5)
+        twins = []
+        for r in results:
+            match = summaries[r.id]
+            if match["iso"] != iso.upper():
+                twins.append({
+                    **match,
+                    "similarity": round(r.score * 100, 1),
+                    "why_similar": _explain_similarity(crisis, match)
+                })
+        return jsonify(twins[:3])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-# ── Helpers ───────────────────────────────────────────────────
-def _alert_level(funding_pct: float) -> str:
-    if funding_pct < 20:  return "critical"
-    if funding_pct < 30:  return "severe"
-    if funding_pct < 45:  return "high"
-    return "moderate"
+@app.route("/api/fatigue/country/<iso>")
+def country_detail(iso):
+    crisis = next((s for s in summaries if s["iso"] == iso.upper()), None)
+    if not crisis:
+        return jsonify({"error": "not found"}), 404
+
+    country_df = df[df["country_code"] == iso.upper()].sort_values("year")
+    trend = country_df[[
+        "year",
+        "external_per_capita_usd",
+        "oop_per_capita_usd",
+        "gghed_per_capita_usd",
+        "measles_cases_reported"
+    ]].to_dict("records")
+    return jsonify({**crisis, "trend": trend})
 
 
-def _fatigue_label(score: float) -> str:
-    if score > 0.75: return "Forgotten"
-    if score > 0.55: return "Fading"
-    if score > 0.35: return "Declining"
-    return "Monitored"
-
-
-def _generate_insight(similar: dict, source: dict) -> str:
-    age_diff = abs((2024 - source["start_year"]) - similar["crisis_age"])
-    return (
-        f"Followed a similar funding decay pattern — "
-        f"{similar['latest_funding_pct']:.0f}% funded after "
-        f"{similar['crisis_age']} years. "
-        f"{'Both crises share conflict-driven displacement.' if similar['crisis_type'] == source['crisis_type'] else ''}"
-    )
-
-
-def _prediction_message(crisis: dict, pred: dict, fatigue: float) -> str:
-    name    = crisis["name"]
-    decay   = abs(pred["annual_decay_pct"])
-    funding = pred["2026_funding_pct"]
-    age     = 2024 - crisis["start_year"]
-
-    if pred["will_hit_critical"]:
-        return (
-            f"{name} has been in crisis for {age} years. "
-            f"Funding is decaying at {decay:.1f}% per year. "
-            f"At this rate, coverage will fall to {funding:.0f}% by 2026 — "
-            f"critically below the humanitarian threshold. "
-            f"The world is not disengaging because the crisis improved."
-        )
-    return (
-        f"{name}'s funding has declined {decay:.1f}% annually over {age} years "
-        f"while humanitarian need remains at {crisis['yearly'][max(crisis['yearly'].keys())][1]:.1f}/10. "
-        f"Crisis fatigue score: {fatigue:.2f}/1.0"
-    )
+@app.route("/api/fatigue/summary")
+def summary():
+    critical = len([s for s in summaries if s["risk"] == "CRITICAL"])
+    high     = len([s for s in summaries if s["risk"] == "HIGH"])
+    return jsonify({
+        "total_countries":    len(summaries),
+        "critical_count":     critical,
+        "high_count":         high,
+        "avg_fatigue":        round(sum(s["fatigue_score"] for s in summaries) / len(summaries), 3),
+        "avg_measles_growth": round(sum(s["measles_growth"] for s in summaries) / len(summaries), 3),
+        "most_forgotten":     summaries[0]["name"],
+        "top5": [{"name": s["name"], "fatigue": s["fatigue_score"]} for s in summaries[:5]]
+    })
 
 
 if __name__ == "__main__":
-    app.run(port=5001, debug=True)
+    print("\n🚀 API running at http://localhost:3002")
+    app.run(port=3002, debug=False)

@@ -9,6 +9,28 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 import pandas as pd
+import requests
+
+FATIGUE_API = "http://localhost:3001"
+
+def fetch_crisis_context(query):
+    """Pull live data from vectordb API to inject into chatbot context"""
+    context = ""
+    try:
+        # Always pull summary stats
+        summary = requests.get(f"{FATIGUE_API}/api/fatigue/summary").json()
+        context += f"\nLive Crisis Data: {summary['total_countries']} countries tracked. "
+        context += f"Most forgotten: {summary['most_forgotten']}. "
+        context += f"Critical crises: {summary['critical_count']}.\n"
+
+        # If query mentions a country ISO or name, fetch its details
+        at_risk = requests.get(f"{FATIGUE_API}/api/fatigue/most-at-risk").json()
+        context += "\nMost at-risk countries:\n"
+        for c in at_risk[:5]:
+            context += f"  {c['name']}: fatigue={c['fatigue_score']}, years neglected={c.get('years_neglected', c.get('years_unaddressed', 'N/A'))}\n"
+    except Exception:
+        pass  # API not running, fall back to documents only
+    return context
 from llama_index.core import (
     VectorStoreIndex, SimpleDirectoryReader, Settings, Document,
     StorageContext, load_index_from_storage
@@ -200,7 +222,11 @@ def main():
             
             # Get response from RAG system
             print("\n🤖 Bot: ", end="", flush=True)
-            response = chat_engine.chat(user_query)
+            crisis_context = fetch_crisis_context(user_query)
+            augmented_query = user_query
+            if crisis_context:
+                augmented_query = f"{user_query}\n\nCurrent live data:\n{crisis_context}"
+            response = chat_engine.chat(augmented_query)
             print(response)
             print()  # Empty line for readability
             
