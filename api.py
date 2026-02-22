@@ -18,13 +18,11 @@ from vectordb_setup import (
     DB_CONFIG,
 )
 from llama_index.core import (
-    StorageContext, load_index_from_storage, Settings
+    StorageContext, load_index_from_storage, Settings, PropertyGraphIndex
 )
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.memory import ChatMemoryBuffer
-from dotenv import load_dotenv
-import os
 
 load_dotenv()
 
@@ -35,6 +33,10 @@ CORS(app)  # allow frontend on port 5500 to call this API
 CHAT_ENGINE = None
 
 def init_rag():
+    """
+    Initializes the RAG system as a READ-ONLY consumer.
+    This will NEVER call the Gemini API for indexing.
+    """
     global CHAT_ENGINE
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
@@ -42,25 +44,40 @@ def init_rag():
         return
 
     try:
-        # Use same settings as rag_chatbot.py
-        Settings.llm = GoogleGenAI(api_key=api_key, model="gemini-2.0-flash")
+        # Use gemini-flash-latest as verified by diagnostics
+        # It bypasses the 2.0 quota issues and is more reliable than the 1.5 alias
+        Settings.llm = GoogleGenAI(api_key=api_key, model="models/gemini-flash-latest")
         Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
         
-        index_dir = "./index_storage"
-        if os.path.exists(index_dir):
-            storage_context = StorageContext.from_defaults(persist_dir=index_dir)
+        graph_storage = Path("./graph_storage")
+        vector_storage = Path("./index_storage")
+        
+        # 1. Try to load GraphRAG (Knowledge Graph)
+        if graph_storage.exists() and any(graph_storage.iterdir()):
+            print("🌐 Found local GraphRAG storage. Loading...")
+            storage_context = StorageContext.from_defaults(persist_dir=str(graph_storage))
+            index = PropertyGraphIndex.from_existing(storage_context=storage_context)
+            memory = ChatMemoryBuffer.from_defaults(token_limit=3000)
+            CHAT_ENGINE = index.as_chat_engine(memory=memory)
+            print("✅ GraphRAG loaded (0 Indexing Costs)")
+        
+        # 2. Fallback to VectorRAG (Traditional RAG)
+        elif vector_storage.exists() and any(vector_storage.iterdir()):
+            print("📍 Found local VectorRAG storage. Loading...")
+            storage_context = StorageContext.from_defaults(persist_dir=str(vector_storage))
             index = load_index_from_storage(storage_context)
             memory = ChatMemoryBuffer.from_defaults(token_limit=3000)
-            CHAT_ENGINE = index.as_chat_engine(
-                chat_mode="context",
-                memory=memory
-            )
-            print("✅ RAG System initialized for API")
+            CHAT_ENGINE = index.as_chat_engine(chat_mode="context", memory=memory)
+            print("✅ VectorRAG loaded (0 Indexing Costs)")
+        
         else:
-            print("⚠️ index_storage not found. Run rag_chatbot.py first to build index.")
+            print("⚠️ No prepared RAG storage found in ./graph_storage or ./index_storage.")
+            print("💡 RUN: 'python rag_chatbot.py' to generate the initial index.")
+            
     except Exception as e:
-        print(f"❌ Failed to init RAG: {e}")
+        print(f"❌ Failed to load RAG from storage: {e}")
 
+# Call init on module level
 init_rag()
 
 
@@ -274,6 +291,8 @@ def chat():
             "sources": [] # Could extend to show source docs later
         })
     except Exception as e:
+        import traceback
+        traceback.print_exc() # Print full error to console for debugging
         return jsonify({"error": str(e)}), 500
 
 

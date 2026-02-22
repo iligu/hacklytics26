@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appendMessage('user', text);
         chatInput.value = '';
         chatInput.style.height = 'auto';
-        
+
         // Show loading state
         const loadingDiv = appendMessage('bot', '...', true);
         chatSend.disabled = true;
@@ -45,17 +45,19 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const data = await response.json();
-            
+
             // Replace loading with real response
             loadingDiv.remove();
             if (data.response) {
                 appendMessage('bot', data.response);
+            } else if (data.error) {
+                appendMessage('bot', `Error: ${data.error}`);
             } else {
-                appendMessage('bot', 'Sorry, I encountered an error. Is the API server running?');
+                appendMessage('bot', 'Sorry, I encountered an unknown error. Check the terminal logs.');
             }
         } catch (error) {
             loadingDiv.remove();
-            appendMessage('bot', 'Cannot reach the chat API. In a separate terminal run: python3 api.py (from the project folder). See README for optional RAG setup.');
+            appendMessage('bot', `Connection Error: ${error.message}. Please ensure api.py is running on port 5001.`);
             console.error('Chat error:', error);
         } finally {
             chatSend.disabled = false;
@@ -79,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event Listeners
     chatSend.addEventListener('click', sendMessage);
-    
+
     chatInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -88,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Auto-resize textarea
-    chatInput.addEventListener('input', function() {
+    chatInput.addEventListener('input', function () {
         this.style.height = 'auto';
         this.style.height = (this.scrollHeight) + 'px';
         if (this.scrollHeight > 150) {
