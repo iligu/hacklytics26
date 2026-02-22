@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatSend.disabled = true;
 
         try {
-            const response = await fetch('http://localhost:3001/api/chat', {
+            const response = await fetch('http://localhost:5001/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: text })
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             loadingDiv.remove();
-            appendMessage('bot', 'Error connecting to server. Please ensure vectordb_actian.py is running on port 3001.');
+            appendMessage('bot', 'Error connecting to server. Please ensure api.py is running on port 5001.');
             console.error('Chat error:', error);
         } finally {
             chatSend.disabled = false;
@@ -351,11 +351,11 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('recording-dot').style.background = '#f97316';
 
             const errorMessages = {
-                'not-allowed':    'Mic access denied — click the 🔒 in your address bar to allow it.',
-                'no-speech':      'No speech detected — is your mic muted or unplugged?',
-                'audio-capture':  'No microphone found — is one plugged in?',
-                'network':        'Network error during recognition. Check your connection.',
-                'aborted':        'Recording was cancelled.',
+                'not-allowed': 'Mic access denied — click the 🔒 in your address bar to allow it.',
+                'no-speech': 'No speech detected — is your mic muted or unplugged?',
+                'audio-capture': 'No microphone found — is one plugged in?',
+                'network': 'Network error during recognition. Check your connection.',
+                'aborted': 'Recording was cancelled.',
             };
 
             const msg = errorMessages[e.error] || `Recognition error: ${e.error}`;
@@ -369,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── ElevenLabs Text to Speech ─────────────────────────────
     async function speakResponse(text) {
-        const ELEVENLABS_API_KEY = 'ELEVENLABS_API_KEY';
+        const ELEVENLABS_API_KEY = 'sk_d4df9673226d3103f0072ebfd8a291877d36286b6f384587';
         const VOICE_ID = 'EXAVITQu4vr4xnSDxMaL';
 
         try {

@@ -1,26 +1,21 @@
-"""
-Crisis Fatigue Detector — Actian VectorAI DB
-=============================================
-Uses real GHED + measles + population density data.
-
-Vector captures GROWTH PATTERNS of:
-  - Virus (measles) case growth rate
-  - Government health funding trend
-  - External donor funding decay
-  - Out-of-pocket burden rise
-  - Population density
-  - External dependency
-
-Countries with the same vector = same trajectory of being forgotten.
-
-Run with:  python3 api.py
-"""
-
+import sys
 import os
+from pathlib import Path
 import pandas as pd
 import numpy as np
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from dotenv import load_dotenv
+
+# RAG Imports
+from llama_index.core import (
+    StorageContext, load_index_from_storage, Settings, PropertyGraphIndex
+)
+from llama_index.llms.google_genai import GoogleGenAI
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.core.memory import ChatMemoryBuffer
+
+load_dotenv()
 
 # ── Load real data ────────────────────────────────────────────
 df = pd.read_csv("data/combined_ghed_measles_popdensity.csv")
@@ -202,6 +197,46 @@ def _explain_similarity(a, b):
     return reasons if reasons else ["overall fatigue trajectory matches"]
 
 
+# ── RAG System Initialization ────────────────────────────────
+CHAT_ENGINE = None
+
+def init_rag():
+    """Initializes the RAG system as a READ-ONLY consumer."""
+    global CHAT_ENGINE
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        print("⚠️ GEMINI_API_KEY not found. RAG Chat will be disabled.")
+        return
+
+    try:
+        # Use gemini-flash-latest as verified by diagnostics
+        Settings.llm = GoogleGenAI(api_key=api_key, model="models/gemini-flash-latest")
+        Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+        
+        graph_storage = Path("./graph_storage")
+        vector_storage = Path("./index_storage")
+        
+        if graph_storage.exists() and any(graph_storage.iterdir()):
+            print("🌐 Found local GraphRAG storage. Loading...")
+            storage_context = StorageContext.from_defaults(persist_dir=str(graph_storage))
+            index = PropertyGraphIndex.from_existing(storage_context=storage_context)
+            memory = ChatMemoryBuffer.from_defaults(token_limit=3000)
+            CHAT_ENGINE = index.as_chat_engine(memory=memory)
+            print("✅ GraphRAG loaded")
+        elif vector_storage.exists() and any(vector_storage.iterdir()):
+            print("📍 Found local VectorRAG storage. Loading...")
+            storage_context = StorageContext.from_defaults(persist_dir=str(vector_storage))
+            index = load_index_from_storage(storage_context)
+            memory = ChatMemoryBuffer.from_defaults(token_limit=3000)
+            CHAT_ENGINE = index.as_chat_engine(chat_mode="context", memory=memory)
+            print("✅ VectorRAG loaded")
+        else:
+            print("⚠️ No prepared RAG storage found.")
+    except Exception as e:
+        print(f"❌ Failed to load RAG: {e}")
+
+init_rag()
+
 # ── Flask API ─────────────────────────────────────────────────
 app = Flask(__name__)
 CORS(app)
@@ -209,32 +244,27 @@ CORS(app)
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
+    """RAG Chat endpoint using LlamaIndex"""
+    if not CHAT_ENGINE:
+        return jsonify({"response": "RAG system not initialized. Check server logs."}), 503
+    
+    data = request.json or {}
+    user_msg = data.get("message")
+    if not user_msg:
+        return jsonify({"error": "No message provided"}), 400
+    
     try:
-        import google.generativeai as genai
-    except ImportError:
-        return jsonify({"response": "google-generativeai package not installed. Run: pip3 install google-generativeai"}), 500
-
-    data    = request.json or {}
-    message = data.get("message", "")
-
-    crisis_context = ""
-    try:
-        crisis_context  = f"Most forgotten: {summaries[0]['name']}. "
-        crisis_context += f"Critical crises: {len([s for s in summaries if s['risk'] == 'CRITICAL'])}.\n"
-        crisis_context += "Top at-risk countries:\n"
-        for s in summaries[:5]:
-            crisis_context += f"  {s['name']}: fatigue={s['fatigue_score']}, risk={s['risk']}\n"
-    except Exception:
-        pass
-
-    try:
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        model     = genai.GenerativeModel("gemini-2.0-flash")
-        augmented = f"{message}\n\nLive crisis data:\n{crisis_context}" if crisis_context else message
-        response  = model.generate_content(augmented)
-        return jsonify({"response": response.text})
+        # Augmented context from the summary statistics
+        crisis_summary = f"Currently tracking {len(summaries)} countries. Top risk: {summaries[0]['name']}."
+        response = CHAT_ENGINE.chat(f"{user_msg}\n\nContext: {crisis_summary}")
+        return jsonify({
+            "response": str(response),
+            "sources": []
+        })
     except Exception as e:
-        return jsonify({"response": f"AI error: {e}"}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/fatigue/all")
@@ -322,5 +352,5 @@ def summary():
 
 
 if __name__ == "__main__":
-    print("\n🚀 API running at http://localhost:3002")
-    app.run(port=3002, debug=False)
+    print("\n🚀 API running at http://localhost:5001")
+    app.run(port=5001, debug=False)
