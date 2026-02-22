@@ -1,8 +1,9 @@
-<img width="1440" height="777" alt="Screenshot 2026-02-21 at 11 44 58 PM" src="https://github.com/user-attachments/assets/489ddcbe-ca38-451d-b7b6-4449926eab76" />
-
-# Pathologic — Global Disease Surveillance
+# PathoLogic: Epidemiology Prediction Dashboard
+> Break out of the outbreak.
 
 Geospatial dashboard for epidemic data, funding gaps, and vaccine coverage. Built for hackathon use; modular so you can add more diseases easily.
+
+<img width="1440" height="777" alt="Screenshot 2026-02-21 at 11 44 58 PM" src="https://github.com/user-attachments/assets/489ddcbe-ca38-451d-b7b6-4449926eab76" />
 
 ## How to run the dashboard (Python server for JSON/CSV)
 
