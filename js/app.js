@@ -46,7 +46,7 @@
     return currentDisease === 'covid19' ? (typeof COVID19_YEAR_MIN !== 'undefined' ? COVID19_YEAR_MIN : 2020) : (YEAR_MIN || 2000);
   }
   function getYearMax() {
-    return currentDisease === 'covid19' ? (typeof COVID19_YEAR_MAX !== 'undefined' ? COVID19_YEAR_MAX : 2023) : (YEAR_MAX || 2023);
+    return currentDisease === 'covid19' ? (typeof COVID19_YEAR_MAX !== 'undefined' ? COVID19_YEAR_MAX : 2028) : (YEAR_MAX || 2023);
   }
   function updateYearRange() {
     var min = getYearMin();
