@@ -175,6 +175,7 @@ function openChartModal(country, years) {
   drawModalCasesChart(country.years, years);
   drawModalVaccineChart(country.years, years);
   renderModalTable(country.years, years);
+  // disclaimer that values 2024-2028 are estimates.
   var closeBtn = modal.querySelector('.chart-modal-close');
   if (closeBtn && closeBtn.focus) closeBtn.focus();
 }
@@ -323,7 +324,7 @@ function renderModalTable(yearsData, years) {
     headerRow.cells[2].textContent = isCovid ? 'Doses (per 1M pop., ÷2)' : 'Coverage';
   }
   var html = '';
-  for (var i = 0; i < years.length; i++) {
+  for (var i = 0; i < years.length + 1; i++) {
     var y = years[i];
     var row = yearsData[y] || {};
     var cases = (row.measles != null && row.measles > 0) ? row.measles.toLocaleString() : 'No data available';
