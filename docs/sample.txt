@@ -9,7 +9,7 @@ The RAG (Retrieval-Augmented Generation) chatbot uses LlamaIndex to:
 4. Generate answers using Google's Gemini API
 
 To use this chatbot:
-- Add your own .txt, .md, .pdf, or .docx files to this docs/ folder
+- Add your own .txt, .md, .pdf, .csv, or .docx files to this docs/ folder
 - Run: python rag_chatbot.py
 - Start asking questions about your documents!
 

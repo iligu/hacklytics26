@@ -62,7 +62,7 @@ def initialize_rag_system(api_key):
     print("\n🔄 Initializing RAG system...")
     
     # Configure LlamaIndex settings using the new google-genai SDK
-    Settings.llm = GoogleGenAI(api_key=api_key, model="gemini-2.0-flash-lite")
+    Settings.llm = GoogleGenAI(api_key=api_key, model="gemini-2.0-flash")
     # Local embeddings — runs on-device, no API calls, no quota issues
     # BAAI/bge-small-en-v1.5 is fast (~130MB) and high quality
     Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")

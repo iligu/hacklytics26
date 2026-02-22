@@ -1,24 +1,12 @@
-"""
-Crisis Fatigue API — Flask Backend
-====================================
-Serves VectorDB-powered predictions to the frontend.
+import sys
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 
-Run: python api.py
-Runs on: http://localhost:5001
-
-Endpoints:
-  GET /api/fatigue/all          — all crises with fatigue scores
-  GET /api/fatigue/similar/<iso> — find similar forgotten crises
-  GET /api/fatigue/predict/<iso> — get funding decay prediction
-  GET /api/fatigue/ranking       — ranked by fatigue (most forgotten first)
-  GET /api/fatigue/next-victims  — predicted to go critical in 2025–2026
-"""
-
-from flask import Flask, jsonify
+# Add docs to path so we can import vectordb_setup
+sys.path.append(str(Path(__file__).parent / "docs"))
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-import psycopg2
-import psycopg2.extras
-import json
 from vectordb_setup import (
     CRISIS_HISTORY,
     compute_fatigue_vector,
@@ -26,9 +14,51 @@ from vectordb_setup import (
     predict_next_forgotten,
     DB_CONFIG,
 )
+from llama_index.core import (
+    StorageContext, load_index_from_storage, Settings
+)
+from llama_index.llms.google_genai import GoogleGenAI
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.core.memory import ChatMemoryBuffer
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)  # allow frontend on port 5500 to call this API
+
+# ── RAG System Initialization ────────────────────────────────
+CHAT_ENGINE = None
+
+def init_rag():
+    global CHAT_ENGINE
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        print("⚠️ GEMINI_API_KEY not found. RAG Chat will be disabled.")
+        return
+
+    try:
+        # Use same settings as rag_chatbot.py
+        Settings.llm = GoogleGenAI(api_key=api_key, model="gemini-2.0-flash")
+        Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+        
+        index_dir = "./index_storage"
+        if os.path.exists(index_dir):
+            storage_context = StorageContext.from_defaults(persist_dir=index_dir)
+            index = load_index_from_storage(storage_context)
+            memory = ChatMemoryBuffer.from_defaults(token_limit=3000)
+            CHAT_ENGINE = index.as_chat_engine(
+                chat_mode="context",
+                memory=memory
+            )
+            print("✅ RAG System initialized for API")
+        else:
+            print("⚠️ index_storage not found. Run rag_chatbot.py first to build index.")
+    except Exception as e:
+        print(f"❌ Failed to init RAG: {e}")
+
+init_rag()
 
 
 def get_conn():
@@ -220,6 +250,30 @@ def next_victims():
         "headline": f"{len(enriched)} crises projected to become critically underfunded by 2026",
         "crises": enriched,
     })
+
+
+# ── POST /api/chat ────────────────────────────────────────────
+from flask import request
+
+@app.route("/api/chat", methods=["POST"])
+def chat():
+    """RAG Chat endpoint"""
+    if not CHAT_ENGINE:
+        return jsonify({"response": "RAG system not initialized. Please check server logs."}), 503
+    
+    data = request.json
+    user_msg = data.get("message")
+    if not user_msg:
+        return jsonify({"error": "No message provided"}), 400
+    
+    try:
+        response = CHAT_ENGINE.chat(user_msg)
+        return jsonify({
+            "response": str(response),
+            "sources": [] # Could extend to show source docs later
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 # ── Helpers ───────────────────────────────────────────────────
