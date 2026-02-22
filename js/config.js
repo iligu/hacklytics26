@@ -40,9 +40,10 @@ const DISEASE_CONFIG = {
   covid19: {
     label: 'COVID-19',
     R0: 2.5,
-    casesCsvUrl: 'covid19_total_cases_by_year.csv',
-    vaccineCsvUrl: 'covid19_vaccine_doses_by_year.csv',
-    populationJsonUrl: 'js/covid19_population_2020.json',  // 2020 population for per-1M → total conversion
+    vaccineJsonUrl: 'Measles%20vaccination%20coverage%202026-17-02%2011-10%20UTC.json',
+    vaccineCsvUrl: 'Measles%20vaccination%20coverage%202026-17-02%2011-10%20UTC.csv',
+    antigen: 'MCV2',
+    coverageCategory: 'ADMIN',
     antigenLabel: 'COVID-19',
     casesLabel: 'Total cases',
   },

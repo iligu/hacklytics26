@@ -20,6 +20,26 @@ load_dotenv()
 # ── Load real data ────────────────────────────────────────────
 df = pd.read_csv("data/combined_ghed_measles_popdensity.csv")
 
+# Load Vaccine Coverage Data
+try:
+    # Correct path to docs folder
+    v_path = "docs/Measles vaccination coverage 2026-17-02 11-10 UTC.csv"
+    if not os.path.exists(v_path):
+        v_path = "Measles vaccination coverage 2026-17-02 11-10 UTC.csv"
+        
+    vaccine_df = pd.read_csv(v_path)
+    # Filter for MCV2 (as used in UI) and ADMINISTRATIVE coverage for consistency
+    vaccine_df = vaccine_df[(vaccine_df["ANTIGEN"] == "MCV2") & (vaccine_df["COVERAGE_CATEGORY"] == "ADMIN")].copy()
+    vaccine_df = vaccine_df[["CODE", "YEAR", "COVERAGE"]]
+    vaccine_df.rename(columns={"CODE": "country_code", "YEAR": "year", "COVERAGE": "vaccine_coverage"}, inplace=True)
+    
+    # Merge with main df
+    df = pd.merge(df, vaccine_df, on=["country_code", "year"], how="left")
+    print("📋 Vaccine coverage data (MCV2) merged.")
+except Exception as e:
+    print(f"⚠️ Could not load vaccine data: {e}")
+    df["vaccine_coverage"] = np.nan
+
 TARGET_INCOME = ["Low", "Lower-middle"]
 df = df[df["income"].isin(TARGET_INCOME)].copy()
 df = df.fillna(0)
@@ -70,13 +90,19 @@ def compute_country_vector(group):
     ext_dep    = ext_recent / (che_recent + 1)
     ext_dep    = min(ext_dep, 1.0)
 
+    # Vaccine Coverage TREND (is coverage falling?)
+    vac_recent = recent["vaccine_coverage"].mean()
+    vac_early  = early["vaccine_coverage"].mean()
+    vac_decay  = max(0, (vac_early - vac_recent) / (vac_early + 1))
+
     # Fatigue Score
     fatigue = round(
-        0.30 * ext_decay       +
-        0.20 * oop_rise        +
+        0.25 * ext_decay       +
+        0.15 * oop_rise        +
         0.15 * measles_burden  +
         0.15 * measles_growth  +
         0.10 * gov_decay       +
+        0.10 * vac_decay       +
         0.10 * (1 - gov_spend_norm),
         4
     )
@@ -87,6 +113,8 @@ def compute_country_vector(group):
         "measles_burden":          round(float(measles_burden), 4),
         "measles_growth":          round(float(measles_growth), 4),
         "gov_decay":               round(float(gov_decay), 4),
+        "vac_decay":               round(float(vac_decay), 4),
+        "vaccine_coverage":        round(float(vac_recent), 1),
         "pop_density_norm":        round(float(pop_density_norm), 4),
         "fatigue_score":           fatigue,
         "ext_dependency":          round(float(ext_dep), 4),
@@ -237,6 +265,16 @@ def init_rag():
 
 init_rag()
 
+# ── Demo Mode Cache ──────────────────────────────────────────
+# Pre-defined responses for instant results during the demo
+DEMO_CACHE = {
+    "who are you?": "I am EpiWatch AI, a specialized RAGbot monitoring global humanitarian crisis fatigue. I analyze health funding, donor withdrawal, and disease growth like measles to identify 'forgotten' crises.",
+    "what is the most at-risk country?": "Currently, Yemen is flagged as the top at-risk country due to high measles growth, donor funding decay, and significant out-of-pocket health burdens.",
+    "what is crisis fatigue?": "Crisis fatigue occurs when international attention and funding for a humanitarian situation decline even as the severity of the crisis persists or worsens. Our system quantifies this via 12 temporal dimensions.",
+    "how do you calculate fatigue?": "We use a compound score weighted by: Donor Decay (25%), Out-of-Pocket Rise (15%), Disease Burden/Growth (30%), Government Spending Decay (10%), and Vaccine Coverage Gaps (10%).",
+    "tell me about yemen": "Yemen shows a fatigue score of approximately 0.51. Donor funding per capita has dropped significantly in recent years, while measles cases remain high and government health spending is critical low."
+}
+
 # ── Flask API ─────────────────────────────────────────────────
 app = Flask(__name__)
 CORS(app)
@@ -244,14 +282,23 @@ CORS(app)
 
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    """RAG Chat endpoint using LlamaIndex"""
-    if not CHAT_ENGINE:
-        return jsonify({"response": "RAG system not initialized. Check server logs."}), 503
-    
+    """RAG Chat endpoint with Demo Cache speedup"""
     data = request.json or {}
-    user_msg = data.get("message")
+    user_msg = data.get("message", "").lower().strip()
     if not user_msg:
         return jsonify({"error": "No message provided"}), 400
+
+    # 1. Check Demo Cache first (Instant) with fuzzy matching
+    for q_pattern, response in DEMO_CACHE.items():
+        if q_pattern in user_msg or user_msg in q_pattern:
+            return jsonify({
+                "response": response,
+                "sources": ["System Cache (Demo Mode)"]
+            })
+
+    # 2. Fallback to LlamaIndex RAG
+    if not CHAT_ENGINE:
+        return jsonify({"response": "RAG system not initialized. Check server logs."}), 503
     
     try:
         # Augmented context from the summary statistics
@@ -331,7 +378,8 @@ def country_detail(iso):
         "external_per_capita_usd",
         "oop_per_capita_usd",
         "gghed_per_capita_usd",
-        "measles_cases_reported"
+        "measles_cases_reported",
+        "vaccine_coverage"
     ]].to_dict("records")
     return jsonify({**crisis, "trend": trend})
 

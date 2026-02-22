@@ -32,104 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
     document.body.appendChild(recordingPopup);
 
-    // Inject popup styles
-    const style = document.createElement('style');
-    style.textContent = `
-        #recording-popup {
-            display: none;
-            position: fixed;
-            bottom: 100px;
-            right: 24px;
-            z-index: 9999;
-            width: 320px;
-            animation: popupSlideIn 0.2s ease;
-        }
-        @keyframes popupSlideIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        #recording-popup.visible {
-            display: block;
-        }
-        #recording-popup-inner {
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 14px;
-            padding: 16px 18px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            font-family: 'DM Mono', monospace;
-        }
-        #recording-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        #recording-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #ef4444;
-            animation: pulse-dot 1s infinite;
-            flex-shrink: 0;
-        }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50%       { opacity: 0.4; transform: scale(0.8); }
-        }
-        #recording-status-text {
-            flex: 1;
-            font-size: 13px;
-            font-weight: 600;
-            color: #f8fafc;
-            letter-spacing: 0.03em;
-        }
-        #recording-cancel {
-            background: none;
-            border: none;
-            color: #64748b;
-            cursor: pointer;
-            font-size: 14px;
-            padding: 2px 4px;
-            line-height: 1;
-            border-radius: 4px;
-            transition: color 0.15s;
-        }
-        #recording-cancel:hover { color: #f8fafc; }
-        #recording-live-text {
-            min-height: 48px;
-            font-size: 14px;
-            color: #94a3b8;
-            line-height: 1.5;
-            padding: 8px 10px;
-            background: #1e293b;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            transition: color 0.2s;
-            word-break: break-word;
-        }
-        #recording-live-text.has-text {
-            color: #e2e8f0;
-        }
-        #recording-warning {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            color: #fb923c;
-            margin-bottom: 8px;
-            padding: 6px 10px;
-            background: rgba(251,146,60,0.1);
-            border-radius: 6px;
-        }
-        #recording-warning.hidden { display: none; }
-        #recording-tip {
-            font-size: 11px;
-            color: #475569;
-            text-align: center;
-        }
-    `;
-    document.head.appendChild(style);
 
     // ── Toggle Chat visibility ────────────────────────────────
     chatToggle.addEventListener('click', () => {
@@ -228,6 +130,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function closePopup() {
         recordingPopup.classList.remove('visible');
     }
+
+    // ── Handle Suggestions ───────────────────────────────────
+    document.querySelectorAll('.suggestion-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            chatInput.value = btn.textContent;
+            sendMessage();
+        });
+    });
 
     // ── Text Input Event Listeners ────────────────────────────
     chatSend.addEventListener('click', sendMessage);
