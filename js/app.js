@@ -133,6 +133,8 @@
   Promise.all([
     loadVaccineData(),
     typeof loadCovid19Data === 'function' ? loadCovid19Data() : Promise.resolve()
-  ]).then(function () { renderYear(currentYear); })
+  ]).then(function () {
+    return typeof loadMeaslesForecast === 'function' ? loadMeaslesForecast() : Promise.resolve();
+  }).then(function () { renderYear(currentYear); })
     .catch(function () { renderYear(currentYear); });
 })();

@@ -260,6 +260,56 @@ function loadVaccineData(diseaseKey) {
     });
 }
 
+/** Build name -> ISO3 code from EPIDEMIC_DATA for matching forecast CSV country names. */
+function getCountryNameToCode() {
+  const nameToCode = {};
+  for (const code of Object.keys(EPIDEMIC_DATA)) {
+    const name = EPIDEMIC_DATA[code].name;
+    if (name) nameToCode[name] = code;
+  }
+  return nameToCode;
+}
+
+/**
+ * Parse measles_5yr_forecast.csv and merge 2024–2028 forecast cases into EPIDEMIC_DATA.
+ * CSV columns: country, region, income, r0, r_eff, 2024, 2025, 2026, 2027, 2028, total_forecast.
+ */
+function parseAndMergeMeaslesForecastCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return;
+  const nameToCode = getCountryNameToCode();
+  const forecastYears = ['2024', '2025', '2026', '2027', '2028'];
+  for (let i = 1; i < lines.length; i++) {
+    const row = parseCSVLine(lines[i]);
+    if (row.length < 10) continue;
+    const countryName = (row[0] || '').trim();
+    const code = nameToCode[countryName];
+    if (!code) continue;
+    const v = EPIDEMIC_DATA[code];
+    if (!v || !v.years) continue;
+    const years = Object.keys(v.years).sort(function (a, b) { return Number(a) - Number(b); });
+    let lastYear = years.length ? years[years.length - 1] : null;
+    for (let j = 0; j < forecastYears.length; j++) {
+      const yr = forecastYears[j];
+      const colIdx = 5 + j;
+      let val = parseFloat(String(row[colIdx] || '0').replace(/[^\d.-]/g, ''));
+      if (isNaN(val)) val = 0;
+      if (!v.years[yr]) {
+        v.years[yr] = lastYear ? { ...v.years[lastYear], measles: 0 } : { measles: 0 };
+      }
+      v.years[yr].measles = Math.round(val);
+      lastYear = yr;
+    }
+  }
+}
+
+function loadMeaslesForecast() {
+  return fetch('data/measles_5yr_forecast.csv')
+    .then(function (r) { return r.text(); })
+    .then(function (text) { parseAndMergeMeaslesForecastCSV(text); })
+    .catch(function (e) { console.warn('Measles 5-year forecast not loaded:', e); });
+}
+
 /** COVID-19: cases and vaccine doses by country/year. Uses same funding (EPIDEMIC_DATA) for gap. */
 var COVID19_CASES = {};       // cc -> { year -> casesPer1M (converted to total when population available) }
 var COVID19_CASES_RAW = {};   // cc -> { year -> casesPer1M } (always per 1M, for conversion)
