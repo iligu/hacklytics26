@@ -1,5 +1,5 @@
 /**
- * EpiWatch — Global state and map instance
+ * Pathologic — Global state and map instance
  * Must load after config.js; other modules depend on these globals.
  */
 let currentYear = '2010';

@@ -1,5 +1,5 @@
 /**
- * EpiWatch — Controls and bootstrap
+ * Pathologic — Controls and bootstrap
  * Depends: all other modules; runs after DOM and scripts are ready.
  */
 (function () {
@@ -46,7 +46,7 @@
     return currentDisease === 'covid19' ? (typeof COVID19_YEAR_MIN !== 'undefined' ? COVID19_YEAR_MIN : 2020) : (YEAR_MIN || 2000);
   }
   function getYearMax() {
-    return currentDisease === 'covid19' ? (typeof COVID19_YEAR_MAX !== 'undefined' ? COVID19_YEAR_MAX : 2023) : (YEAR_MAX || 2023);
+    return currentDisease === 'covid19' ? (typeof COVID19_YEAR_MAX !== 'undefined' ? COVID19_YEAR_MAX : 2028) : (YEAR_MAX || 2023);
   }
   function updateYearRange() {
     var min = getYearMin();
@@ -133,6 +133,8 @@
   Promise.all([
     loadVaccineData(),
     typeof loadCovid19Data === 'function' ? loadCovid19Data() : Promise.resolve()
-  ]).then(function () { renderYear(currentYear); })
+  ]).then(function () {
+    return typeof loadMeaslesForecast === 'function' ? loadMeaslesForecast() : Promise.resolve();
+  }).then(function () { renderYear(currentYear); })
     .catch(function () { renderYear(currentYear); });
 })();

@@ -1,5 +1,5 @@
 /**
- * EpiWatch — Map color scales and year data
+ * Pathologic — Map color scales and year data
  * Depends: EPIDEMIC_DATA, R0_BASE, currentDisease (app-state.js)
  * Scales pegged to median/percentiles for professional, stable interpretation.
  */

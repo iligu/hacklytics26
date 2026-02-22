@@ -1,5 +1,5 @@
 /**
- * EpiWatch — Map rendering (circles, GeoJSON, legend)
+ * Pathologic — Map rendering (circles, GeoJSON, legend)
  * Depends: map, markers, geojsonLayer, animFrames, currentMode, currentDisease,
  *          getYearData, caseColor, fundingColor, coverageColor, computeR0, WORLD_GEOJSON, showCountry
  */
@@ -133,7 +133,7 @@ function renderSpreadCircle(e, maxCases, caseStats, usePerCapita) {
   var fundLabel = (e.gghed_per_capita != null && e.gghed_per_capita > 0) ? '$' + e.gghed_per_capita.toFixed(0) + '/cap' : 'No data available';
   var popLabel = (e.pop_density != null) ? e.pop_density.toFixed(1) + '/km²' : 'No data available';
   marker.bindTooltip(
-    '<div style="font-family:\'DM Mono\',monospace;font-size:11px;"><strong style="color:#000">' + e.name + '</strong><br>' + casesRowLabel + ': <strong>' + casesLabel + '</strong><br>Gov. Health Funding: ' + fundLabel + '<br>Pop. Density: ' + popLabel + '<br>Adj. R₀ (indicative): ' + r0.toFixed(1) + '</div>',
+    '<div style="font-family:\'DM Mono\',monospace;font-size:11px;"><strong style="color:#000">' + e.name + '</strong><br>' + casesRowLabel + ': <strong>' + casesLabel + '</strong><br>Funding: ' + fundLabel + '<br>Pop. Density: ' + popLabel + '<br>Adj. R₀ (indicative): ' + r0.toFixed(1) + '</div>',
     { direction: 'top', offset: [0, -8] }
   );
   markers[e.cc] = marker;

@@ -1,5 +1,5 @@
 /**
- * EpiWatch — Country detail panel and sparklines
+ * Pathologic — Country detail panel and sparklines
  * Depends: EPIDEMIC_DATA, currentYear, selectedCountry, coverageColor, computeR0
  */
 function showCountry(cc) {
@@ -64,7 +64,7 @@ function showCountry(cc) {
     (currentDisease === 'covid19'
       ? '<div class="stat-card"><div class="stat-label">Doses (per 1M pop., ÷2)</div><div class="stat-value cyan">' + dosesStr + '</div></div>'
       : '<div class="stat-card"><div class="stat-label">Vaccine Coverage (' + antigenLabel + ')</div><div class="stat-value ' + (coverageNum < 0 ? '' : coverageNum < 50 ? 'red' : coverageNum < 80 ? 'yellow' : 'green') + '">' + coverageStr + '</div>' + (coverageNum >= 0 && coverageNum < 95 ? '<div class="stat-gap">Target 95% \u2022 Gap ' + (95 - coverageNum).toFixed(1) + '%</div>' : '') + '</div><div class="stat-card"><div class="stat-label">Doses Administered</div><div class="stat-value cyan">' + dosesStr + '</div></div>') +
-    '<div class="stat-card"><div class="stat-label">Gov. Funding/cap</div><div class="stat-value ' + (fundingNum < 0 ? '' : fundingNum < 50 ? 'red' : fundingNum < 200 ? 'yellow' : 'green') + '">' + fundingStr + '</div></div>' +
+    '<div class="stat-card"><div class="stat-label">Funding/cap</div><div class="stat-value ' + (fundingNum < 0 ? '' : fundingNum < 50 ? 'red' : fundingNum < 200 ? 'yellow' : 'green') + '">' + fundingStr + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Pop. Density</div><div class="stat-value cyan">' + popStr + '</div></div>' +
     '<div class="stat-card"><div class="stat-label">Funding gap (burden vs funding)</div><div class="stat-value ' + (gapNum > 0.3 ? 'red' : gapNum > 0.1 ? 'yellow' : '') + '">' + gapStr + '</div></div>' +
     '</div>' +

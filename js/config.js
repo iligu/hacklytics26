@@ -1,5 +1,5 @@
 /**
- * EpiWatch — Disease configuration
+ * Pathologic — Disease configuration
  *
  * R0: Reference basic reproduction number from literature (measles typically 12–18; we use 15).
  *     Used for SIR model (β, γ, peak fraction). See DATA_AND_METHODOLOGY.md.
@@ -82,7 +82,7 @@ const R0_BASE = Object.fromEntries(
 
 /** Year range for the slider */
 const YEAR_MIN = 2000;
-const YEAR_MAX = 2023;
+const YEAR_MAX = 2028;
 
 /** COVID-19: data from 2020 onwards */
 const COVID19_YEAR_MIN = 2020;

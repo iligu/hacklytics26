@@ -1,6 +1,9 @@
-# EpiWatch — Global Disease Surveillance
+# PathoLogic: Epidemiology Prediction Dashboard
+> Break out of the outbreak.
 
 Geospatial dashboard for epidemic data, funding gaps, and vaccine coverage. Built for hackathon use; modular so you can add more diseases easily.
+
+<img width="1440" height="777" alt="Screenshot 2026-02-21 at 11 44 58 PM" src="https://github.com/user-attachments/assets/489ddcbe-ca38-451d-b7b6-4449926eab76" />
 
 ## How to run the dashboard (Python server for JSON/CSV)
 
@@ -25,6 +28,24 @@ You should see something like: `Serving HTTP on 0.0.0.0 port 8000 ...`
 **4. Leave the terminal running** while you use the dashboard. To stop the server, press `Ctrl+C` in the terminal.
 
 Vaccine JSON/CSV files in the project folder (e.g. `Measles vaccination coverage 2026-17-02 11-10 UTC.json`) will load correctly when the page is served this way.
+
+## Chat with Data Expert (optional)
+
+The **Chat with Data Expert** widget in the dashboard calls a separate API. To use it:
+
+**1. In a second terminal**, from the project folder, start the chat API:
+```bash
+cd /path/to/hacklytics26
+python3 api.py
+```
+You should see: `* Running on http://127.0.0.1:5001` (and a note if RAG is enabled).
+
+**2. (Optional) For RAG answers** from your docs, set a Gemini API key and build the index once:
+- Create a `.env` file in the project root with: `GEMINI_API_KEY=your_key`
+- Run once to build the index: `python3 rag_chatbot.py` (then exit); this creates `index_storage/`
+- Then run `python3 api.py` as above.
+
+**3. Keep the API running** while you use the chat. If you see “Error connecting to server”, the API is not running or not reachable on port 5001.
 
 ## Project structure
 
@@ -78,7 +99,7 @@ Vaccine JSON/CSV files in the project folder (e.g. `Measles vaccination coverage
 ## Map modes
 
 - **Spread Circles**: Case-based circles (and R0-style radius).
-- **Funding Gap**: Choropleth or circles by gov. health funding per capita.
+- **Funding Gap**: Choropleth or circles by funding per capita.
 - **Vaccine Coverage**: Circles colored by coverage % (red = gap, green = on target); 95% target line in the panel.
 
 Legend and country panel labels (e.g. “Measles case load”, “Vaccine Coverage (MCV2)”) use `DISEASE_CONFIG[currentDisease]` so they stay correct when you add diseases.

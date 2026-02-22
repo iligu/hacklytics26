@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EpiWatch — Global Disease Surveillance</title>
+  <title>Pathologic — Global Disease Surveillance</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
     href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap"
@@ -18,7 +18,7 @@
   <div id="app">
     <div id="sidebar">
       <div id="sidebar-header">
-        <h1>EpiWatch</h1>
+        <h1>Pathologic</h1>
         <p>Global Disease Surveillance Dashboard</p>
       </div>
 
@@ -38,7 +38,7 @@
       <div class="control-section">
         <div class="control-label">Year</div>
         <div id="year-display">2010</div>
-        <input type="range" id="year-slider" min="2000" max="2023" value="2010" step="1">
+        <input type="range" id="year-slider" min="2000" max="2028" value="2010" step="1">
         <div class="play-controls">
           <button class="btn" id="btn-prev">&lt; Prev</button>
           <button class="btn primary" id="btn-play">&#9654; Play</button>
@@ -62,17 +62,6 @@
           <span>No data</span><span>Low</span><span>High</span><span>Severe</span>
         </div>
       </div>
-
-      <details class="data-cautions" open>
-        <summary class="data-cautions-title">Data cautions</summary>
-        <ul class="data-cautions-list">
-          <li>Reported cases may understate true incidence. Gaps indicate missing or unreported data.</li>
-          <li>Funding gap is indicative (burden vs funding). Not an official assessment.</li>
-          <li>Colour scales are pegged to median/percentiles for the selected year.</li>
-          <li>For methodology and sources, see <a href="DATA_AND_METHODOLOGY.md" target="_blank" rel="noopener">Data
-              &amp; methodology</a>.</li>
-        </ul>
-      </details>
 
       <div class="control-section">
         <div class="control-label">Country</div>
@@ -98,6 +87,19 @@
         verified.
       </div>
     </div>
+
+    <!-- Add data-cautions to the bottom right -->
+    <details class="data-cautions"
+      style="position: fixed; bottom: 10px; right: 10px; z-index: 1000; background: white; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
+      <summary class="data-cautions-title">Data cautions</summary>
+      <ul class="data-cautions-list">
+        <li>Reported cases may understate true incidence. Gaps indicate missing or unreported data.</li>
+        <li>Funding gap is indicative (burden vs funding). Not an official assessment.</li>
+        <li>Colour scales are pegged to median/percentiles for the selected year.</li>
+        <li>For methodology and sources, see <a href="DATA_AND_METHODOLOGY.md" target="_blank" rel="noopener">Data
+            &amp; methodology</a>.</li>
+      </ul>
+    </details>
 
     <div id="map-container">
       <div id="map"></div>
@@ -161,12 +163,12 @@
 
     <div id="chat-container" class="hidden">
       <div id="chat-header">
-        <h3>EpiWatch Assistant</h3>
+        <h3>Pathologic Assistant</h3>
         <button id="chat-close">✕</button>
       </div>
       <div id="chat-messages">
         <div class="message bot">
-          Hello! I'm the EpiWatch AI. Ask me anything about the disease data, funding gaps, or our crisis fatigue
+          Hello! I'm the Pathologic AI. Ask me anything about the disease data, funding gaps, or our crisis fatigue
           methodology.
         </div>
       </div>
