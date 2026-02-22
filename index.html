@@ -63,6 +63,20 @@
         </div>
       </div>
 
+<<<<<<< HEAD
+=======
+      <details class="data-cautions" open>
+        <summary class="data-cautions-title">Data cautions</summary>
+        <ul class="data-cautions-list">
+          <li>Reported cases may understate true incidence. Gaps indicate missing or unreported data.</li>
+          <li>Funding gap is indicative (burden vs funding). Not an official assessment.</li>
+          <li>Colour scales are pegged to median/percentiles for the selected year.</li>
+          <li>For methodology and sources, see <a href="DATA_AND_METHODOLOGY.md" target="_blank" rel="noopener">Data
+              &amp; methodology</a>.</li>
+        </ul>
+      </details>
+
+>>>>>>> 1e2ed567ab58635dd8571f5bb2e960affc809501
       <div class="control-section">
         <div class="control-label">Country</div>
         <div class="country-select-wrapper">
@@ -154,6 +168,32 @@
     </div>
   </div>
 
+  <!-- Chat Widget -->
+  <div id="chat-widget">
+    <button id="chat-toggle" class="chat-btn">
+      <span class="icon">💬</span>
+      <span class="label">Chat with Data Expert</span>
+    </button>
+
+    <div id="chat-container" class="hidden">
+      <div id="chat-header">
+        <h3>EpiWatch Assistant</h3>
+        <button id="chat-close">✕</button>
+      </div>
+      <div id="chat-messages">
+        <div class="message bot">
+          Hello! I'm the EpiWatch AI. Ask me anything about the disease data, funding gaps, or our crisis fatigue
+          methodology.
+        </div>
+      </div>
+      <div id="chat-disclaimer">AI-generated; hallucinations may occur.</div>
+      <div id="chat-input-area">
+        <textarea id="chat-input" placeholder="Type your question..." rows="1"></textarea>
+        <button id="chat-send">Send</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Data (large files; keep in js/ for cacheability) -->
   <script src="js/epidemic-data.js"></script>
   <script src="js/world-geo.js"></script>
@@ -164,6 +204,7 @@
   <script src="js/data-loader.js"></script>
   <script src="js/map-render.js"></script>
   <script src="js/panel.js"></script>
+  <script src="js/chat.js"></script>
   <script src="js/app.js"></script>
 </body>
 
